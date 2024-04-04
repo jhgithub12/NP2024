@@ -11,272 +11,271 @@
 #define true 1
 #define false 0
 
-int game_over = false;
-
 static sem_t sem_one;
 static sem_t sem_two;
 
-void error_handling(char* message);
-
-void assemble_board(char placements[][5], int clean_length);
-void *make_move(void *arg);
-void *take_move(void *arg);
-int check_win();
-void clean_screen(int line_count);
-int filter_input(int row, int column);
-
 //tic tac toe data
-char placements[][5] = {
-    {' ', ' ', ' ', ' ', ' '},
-    {' ', ' ', ' ', ' ', ' '},
-    {' ', ' ', ' ', ' ', ' '},
-    {' ', ' ', ' ', ' ', ' '},
-    {' ', ' ', ' ', ' ', ' '},
+char placements[5][5] = {
+	{' ', ' ', ' ', ' ', ' '},
+	{' ', ' ', ' ', ' ', ' '},
+	{' ', ' ', ' ', ' ', ' '},
+	{' ', ' ', ' ', ' ', ' '},
+	{' ', ' ', ' ', ' ', ' '},
 };
+
+// tic tac toe meta data
+int row_count[5] = {0, 0, 0, 0, 0};
+int column_count[5] = {0, 0, 0, 0, 0};
+int diagonal_count[2] = {0, 0};
+int total_count = 0;
+
 char mkey = 'X';
 char nkey = 'O';
 
-int sock, str_len;
-char outbound_message[BUF_SIZE];
-char inbound_message[BUF_SIZE];
-struct sockaddr_in serv_adr;
+int game_over = false;
+
+void *make_move(void *arg);
+void *take_move(void *arg);
+int check_win(int row, int column);
+void set_game_over(char *msg);
+void assemble_board(int clean_length);
+void clean_screen(int line_count);
+int filter_input(int row, int column);
+void error_handling(char* message);
 
 int main(int argc, char* argv[]) {
-    pthread_t id_t1, id_t2;
-    sem_init(&sem_one, 0, 0);
-    sem_init(&sem_two, 0, 1); 
+	int sock;
+	char init_msg[BUF_SIZE];
+	struct sockaddr_in serv_adr;
+    
+	pthread_t id_t1, id_t2;
+	int sem_one_init_val = 1, sem_two_init_val = 0;    
 
+	if (argc != 3) {
+		printf("Usage: %s <IP> <PORT>\n", argv[0]);
+		exit(1);
+  }
 
-    if (argc != 3) {
-        printf("Usage: %s <IP> <PORT>\n", argv[0]);
-        exit(1);
-    }
+  if ((sock = socket(PF_INET, SOCK_STREAM, 0)) == -1)
+  	error_handling("socket() error");
+    
+  memset(&serv_adr, 0, sizeof(struct sockaddr_in));
+  serv_adr.sin_family = AF_INET;
+  serv_adr.sin_addr.s_addr = inet_addr(argv[1]);
+  serv_adr.sin_port = htons(atoi(argv[2]));
 
-    if ((sock = socket(PF_INET, SOCK_STREAM, 0)) == -1) {
-        error_handling("socket() error");
-    }
+  if (connect(sock, (struct sockaddr*) &serv_adr, sizeof(struct sockaddr_in)) == -1) 
+  	error_handling("connect() error");
+  else 
+    puts("Connected......");
 
-    memset(&serv_adr, 0, sizeof(struct sockaddr_in));
-    serv_adr.sin_family = AF_INET;
-    serv_adr.sin_addr.s_addr = inet_addr(argv[1]);
-    serv_adr.sin_port = htons(atoi(argv[2]));
+  read(sock, init_msg, BUF_SIZE - 1);
+	assemble_board(1);
 
-    if (connect(sock, (struct sockaddr*)&serv_adr, sizeof(struct sockaddr_in))
-        == -1) {
-        error_handling("connect() error");
-    } else {
-        puts("Connected......");
-        for(int i = 0; i < 19; i++){  //make space for initial clean_screen()
-            printf("\n");             //runs only ones in the whole process
-        }
-    }
+  if (!strcmp(init_msg, "second")) {
+  	mkey = 'O';
+    nkey = 'X';
+		sem_one_init_val = 0;
+		sem_two_init_val = 1;	
+	}
 
-    pthread_create(&id_t1, NULL, make_move, NULL); //read라는 함수를 넣고 파라미터는 없다
-    pthread_create(&id_t2, NULL, take_move, NULL); //계산
+	sem_init(&sem_one, 0, sem_one_init_val);
+	sem_init(&sem_two, 0, sem_two_init_val);
+	
+  pthread_create(&id_t1, NULL, make_move, (void*) &sock); 
+  pthread_create(&id_t2, NULL, take_move, (void*) &sock); 
 
-    pthread_join(id_t1, NULL);
-    pthread_join(id_t2, NULL);
+  pthread_join(id_t1, NULL);
+  pthread_join(id_t2, NULL);
 
-    sem_destroy(&sem_one);
-    sem_destroy(&sem_two);
+  sem_destroy(&sem_one);
+  sem_destroy(&sem_two);
 
-    close(sock);
+  close(sock);
 
-    return 0;
+  return 0;
 }
-
-void error_handling(char* message) {
-    fputs(message, stderr);
-    fputc('\n', stderr);
-    exit(1);
-}
-
-void assemble_board(char placements[][5], int clean_length){
-    char complete_board[200] = "";
-    char board_bar[] = "---+---+---+---+---\n"; //tic tac toe board bar
-    for(int i = 0; i < 5; i++){ //rows
-        char column[] = "   |   |   |   |   \n";
-        column[1] = placements[i][0];
-        column[5] = placements[i][1];
-        column[9] = placements[i][2];
-        column[13] = placements[i][3];
-        column[17] = placements[i][4];
-        strncat(complete_board, column, sizeof(column)-1); // Append the column to the complete board
-        if (i != 4) {
-            strncat(complete_board, board_bar, sizeof(board_bar)-1); // Append the board bar if not the last row
-        }
-    }
-    clean_screen(clean_length);
-    printf(" 11| 12| 13| 14| 15\n---+---+---+---+---\n 21| 22| 23| 24| 25\n---+---+---+---+---\n 31| 32| 33| 34| 35\n---+---+---+---+---\n 41| 42| 43| 44| 45\n---+---+---+---+---\n 51| 52| 53| 54| 55\n");
-    printf("%s", complete_board);     
-}
-
 
 void *make_move(void *arg){
-    while(1){
-        sem_wait(&sem_one);
-        //Check if game over
-        if(game_over){ //prevents the game from progressing when game over
-            break;
-        }
-        // Prompt for input only after receiving a message
-        assemble_board(placements, 18); //Show the board for input
-        printf("\n");
-        int row, column;
-        while(1){
-            fputs("Input tile number: ", stdout);
-            fgets(outbound_message, BUF_SIZE, stdin);
-            row = outbound_message[0] - '0';
-            column = outbound_message[1] - '0';
-            if(!filter_input(row, column)){
-                clean_screen(2);
-                fputs("INVALID INPUT!\n", stdout);
-            }
-            else{
-                clean_screen(1);
-                break;
-            }
-        }
+  int sock = *((int*) arg);
+	int row, column, did_win;
+	char msg[BUF_SIZE];
+
+  while(1){
+  	sem_wait(&sem_one);
         
+    if (game_over)
+    	break;
 
-        placements[row - 1][column - 1] = mkey;
-        assemble_board(placements, 19); //Refresh the board post-input
+		// input validation
+		while(1) {
+			fputs("\nInput tile number: ", stdout);
+			fgets(msg, BUF_SIZE, stdin);
 
-        //Check for win
-        if(check_win() == 1){
-            clean_screen(20);
-            printf("You win!\n");
-            // Send win message to the server
-            write(sock, "gameover\n", strlen("gameover\n"));
-            memset(outbound_message, '\0', sizeof(outbound_message));
-            game_over = true;
-            sem_post(&sem_two);
-            break;
-        }
-        else if(check_win() == -1){
-            clean_screen(20);
-            printf("Draw!\n");
-            // Send win message to the server
-            write(sock, "draw\n", strlen("draw\n"));
-            memset(outbound_message, '\0', sizeof(outbound_message));
-            game_over = true;
-            sem_post(&sem_two);
-            break;
-        }
-        else{
-            // Send the input message to the server
-            write(sock, outbound_message, strlen(outbound_message));
-            memset(outbound_message, '\0', sizeof(outbound_message));
-            sem_post(&sem_two);
-        }
-    }
+			if (strlen(msg) == 3) {
+				row = msg[0] - '1';
+				column = msg[1] - '1';
 
-    return NULL;
+				if (filter_input(row, column))
+					break;
+			}
+			
+			clean_screen(2);
+			fputs("INVALID INPUT!", stdout);
+			memset(msg, '\0', sizeof(msg));
+		}
+        
+    placements[row][column] = mkey;
+    assemble_board(20); //Refresh the board post-input
+
+		// update meta info
+		total_count++;
+		row_count[row]++;
+		column_count[column]++;
+
+		if (row == column)
+			diagonal_count[0]++;
+
+		if (row + column == 4)
+			diagonal_count[1]++;
+
+		did_win = check_win(row, column);
+		if (did_win == 0) {
+			// Send the input message to the server
+      write(sock, msg, strlen(msg));
+      memset(msg, '\0', sizeof(msg));
+      sem_post(&sem_two);
+		}
+		else {
+			if (did_win == 1) {
+				set_game_over("You win!\n");
+				write(sock, "gameover", strlen("gameover"));
+			}
+			else {
+				set_game_over("Draw!\n");
+				write(sock, "draw", strlen("draw"));
+			}
+      sem_post(&sem_two);
+      break;
+		} 
+	}
+  return NULL;
 }
 
-void *take_move(void *arg){
-    while(1){
-        sem_wait(&sem_two);
-        //Check if game over
-        if(game_over){ //prevents the game from progressing when game over
-            break;
-        }
-        // Wait to receive a message from the server
-        str_len = read(sock, inbound_message, BUF_SIZE - 1);
-        if(!strcmp(inbound_message, "message\n")){
-            mkey = 'O';
-            nkey = 'X'; 
-        }
-        else if(!strcmp(inbound_message, "gameover\n")){
-            clean_screen(20);
-            printf("You lose!\n");
-            game_over = true;
-            sem_post(&sem_one);
-            break;
-        }
-        else if(!strcmp(inbound_message, "draw\n")){
-            clean_screen(20);
-            printf("Draw!\n");
-            game_over = true;
-            sem_post(&sem_one);
-            break;
-        }
-        inbound_message[str_len] = 0;
-        int row = inbound_message[0] - '0';
-        int column = inbound_message[1] - '0';
-        placements[row -1][column - 1] = nkey;
-        sem_post(&sem_one);
+void *take_move(void *arg) {
+	int sock = *((int*) arg);
+	int row, column, str_len;
+	char msg[BUF_SIZE];
+
+  while(1){
+  	sem_wait(&sem_two);
+        
+		if (game_over)
+    	break;
+
+    // Wait to receive a message from the server
+		memset(msg, '\0', sizeof(msg));
+    str_len = read(sock, msg, BUF_SIZE - 1);
+        
+		if(!strcmp(msg, "gameover")){
+			set_game_over("You lose!\n");            
+      sem_post(&sem_one);
+      break;
+    }
+    else if(!strcmp(msg, "draw")){
+			set_game_over("Draw!\n"); 
+      sem_post(&sem_one);
+      break;
     }
 
-    return NULL;
+    row = msg[0] - '1';
+    column = msg[1] - '1';
+
+    placements[row][column] = nkey;
+		assemble_board(18);
+
+		total_count++;
+
+    sem_post(&sem_one);
+	}
+  return NULL;
 }
 
-int check_win() {
-    // Check rows
-    for (int i = 0; i < 5; i++) {
-        if (placements[i][0] != ' ' && placements[i][0] == placements[i][1] && placements[i][1] == placements[i][2] &&
-            placements[i][2] == placements[i][3] && placements[i][3] == placements[i][4]) {
-            return 1; // Player wins
-        }
-    }
+int check_win(int row, int column) {
+	// win
+	if (row_count[row] == 5 || column_count[column] == 5
+		|| diagonal_count[0] == 5 || diagonal_count[1] == 5)	
+		return 1;
 
-    // Check columns
-    for (int i = 0; i < 5; i++) {
-        if (placements[0][i] != ' ' && placements[0][i] == placements[1][i] && placements[1][i] == placements[2][i] &&
-            placements[2][i] == placements[3][i] && placements[3][i] == placements[4][i]) {
-            return 1; // Player wins
-        }
-    }
+	// draw
+	if (total_count == 25)
+		return -1;
 
-    // Check diagonals
-    if (placements[0][0] != ' ' && placements[0][0] == placements[1][1] && placements[1][1] == placements[2][2] &&
-        placements[2][2] == placements[3][3] && placements[3][3] == placements[4][4]) {
-        return 1; // Player wins
-    }
-    if (placements[0][4] != ' ' && placements[0][4] == placements[1][3] && placements[1][3] == placements[2][2] &&
-        placements[2][2] == placements[3][1] && placements[3][1] == placements[4][0]) {
-        return 1; // Player wins
-    }
-
-    // Check if the board is full (no empty spaces left)
-    int is_board_full = 1;
-    for (int i = 0; i < 5; i++) {
-        for (int j = 0; j < 5; j++) {
-            if (placements[i][j] == ' ') {
-                is_board_full = 0;
-                break;
-            }
-        }
-        if (!is_board_full) {
-            break;
-        }
-    }
-    if (is_board_full) {
-        return -1; // Board full, no winner (draw)
-    }
-
-    return 0; // No win yet
+	// no win yet
+	return 0;
 }
 
+void set_game_over(char *msg) {
+	clean_screen(18);
+	printf("%s", msg);
+	game_over = true;
+}
+
+void assemble_board(int clean_length){
+	char number_board[] = 
+		" 11| 12| 13| 14| 15\n"
+		"---+---+---+---+---\n"
+		" 21| 22| 23| 24| 25\n"
+		"---+---+---+---+---\n"
+		" 31| 32| 33| 34| 35\n"
+		"---+---+---+---+---\n"
+		" 41| 42| 43| 44| 45\n"
+		"---+---+---+---+---\n"
+		" 51| 52| 53| 54| 55\n";    
+  char complete_board[200] = "";
+  char board_bar[] = "---+---+---+---+---\n";
+
+	for (int i = 0; i < 5; i++) {
+    char row[] = "   |   |   |   |   \n";
+		for(int j = 0; j < 5; j++){
+			row[4*j + 1] = placements[i][j];
+		}
+
+		// Append the row to the complete board
+    strncat(complete_board, row, sizeof(row) - 1);
+		// Append the board bar if not the last row
+    if (i != 4)
+      strncat(complete_board, board_bar, sizeof(board_bar) - 1);
+  }
+
+  clean_screen(clean_length);
+  printf("%s", number_board);
+  printf("%s", complete_board);     
+}
 
 void clean_screen(int line_count){
-    for(int i = 0; i < line_count; i++){
-        printf("\033[1A"); // Move cursor up one line
-        printf("\033[K");  // Clear line
-    }
+  for(int i = 0; i < line_count; i++){
+    printf("\033[1A"); // Move cursor up one line
+    printf("\033[K");  // Clear line
+  }
 }
 
 int filter_input(int row, int column) {
-    // Check if row and column are within bounds
-    if (row < 1 || row > 5 || column < 1 || column > 5) {
-        return 0; // Invalid input, out of bounds
-    }
+  // Check if row and column are within bounds
+  if (row < 0 || row > 4 || column < 0 || column > 4) {
+  	return 0; // Invalid input, out of bounds
+  }
 
-    // Check if the cell is already occupied
-    if (placements[row - 1][column - 1] != ' ') {
-        return 0; // Invalid input, cell already occupied
-    }
+  // Check if the cell is already occupied
+  if (placements[row][column] != ' ') {
+  	return 0; // Invalid input, cell already occupied
+  }
 
-    return 1; // Valid input
+  return 1; // Valid input
 }
 
+void error_handling(char* message) {
+  fputs(message, stderr);
+  fputc('\n', stderr);
+  exit(1);
+}
