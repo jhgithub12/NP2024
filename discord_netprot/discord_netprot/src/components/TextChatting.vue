@@ -123,7 +123,7 @@ onMounted(() => {
 }
 .messages {
     width: 100%;
-    max-width: 100%;
+    max-width:  80vw;
     max-height: 86vh;
     overflow-y: auto; /* Enable vertical scrolling */
     padding: 20px; /* Add padding to prevent messages from touching the edges */
