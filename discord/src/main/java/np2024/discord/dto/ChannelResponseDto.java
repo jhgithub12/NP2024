@@ -1,4 +1,4 @@
-package np2024.discord.web.dto;
+package np2024.discord.dto;
 
 import lombok.AllArgsConstructor;
 import lombok.Getter;
@@ -6,5 +6,5 @@ import lombok.Getter;
 @Getter
 @AllArgsConstructor
 public class ChannelResponseDto {
-    private Long id;
+    private Long channelId;
 }

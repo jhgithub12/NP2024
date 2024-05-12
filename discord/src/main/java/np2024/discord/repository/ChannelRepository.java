@@ -1,8 +1,7 @@
-package np2024.discord.web.repository;
+package np2024.discord.repository;
 
-import np2024.discord.web.domain.Channel;
-import np2024.discord.web.dto.ChannelRequestDto;
-import np2024.discord.web.exception.ChannelException;
+import np2024.discord.domain.Channel;
+import np2024.discord.dto.ChannelRequestDto;
 import org.springframework.stereotype.Repository;
 
 import java.util.ArrayList;
@@ -28,20 +27,15 @@ public class ChannelRepository {
     }
 
     public void update(Long channelId, ChannelRequestDto request) {
-        if (store.containsKey(channelId)) {
-            Channel channel = store.get(channelId);
-            channel.update(request.getName());
-        } else {
-            throw new ChannelException("CHANNEL ID NOT FOUND: " + channelId);
-        }
+        Channel channel = store.get(channelId);
+        channel.update(request.getName());
     }
 
     public void delete(Long channelId) {
-        if (store.containsKey(channelId)) {
-            store.remove(channelId);
-        } else {
-            throw new ChannelException("CHANNEL ID NOT FOUND: " + channelId);
-        }
+        store.remove(channelId);
     }
 
+    public boolean exists(Long channelId) {
+        return store.containsKey(channelId);
+    }
 }

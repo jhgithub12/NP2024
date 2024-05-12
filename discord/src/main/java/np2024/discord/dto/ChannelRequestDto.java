@@ -1,10 +1,10 @@
-package np2024.discord.web.dto;
+package np2024.discord.dto;
 
-import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.NotEmpty;
 import lombok.Getter;
 
 @Getter
 public class ChannelRequestDto {
-    @NotNull
+    @NotEmpty
     private String name;
 }

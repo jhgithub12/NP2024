@@ -1,4 +1,4 @@
-package np2024.discord.web.domain;
+package np2024.discord.domain;
 
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
