@@ -1,5 +1,12 @@
 package np2024.discord.controller;
 
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.Parameters;
+import io.swagger.v3.oas.annotations.parameters.RequestBody;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import np2024.discord.domain.Channel;
@@ -15,29 +22,61 @@ import java.util.List;
 @RestController
 @RequestMapping("/channels")
 @RequiredArgsConstructor
+@Tag(name = "Channels", description = "채팅 채널 CRUD API")
 public class ChannelController {
 
     private final ChannelRepository channelRepository;
 
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
-    public ChannelResponseDto create(@RequestBody @Valid ChannelRequestDto request){
+    @Operation(summary = "채팅 채널 생성 API", description = "사용자로부터 채널 이름을 받아 채널을 생성하는 API입니다. " +
+            "채널이 정상적으로 생성되었을 경우 생성된 채널의 ID를 반환합니다.")
+    @ApiResponses({
+            @ApiResponse(responseCode = "201", description = "채널이 생성되었습니다."),
+            @ApiResponse(responseCode = "400", description = "잘못된 형식의 요청입니다. 필수 필드의 값이 주어지지 않았을 수 있습니다.")
+    })
+    public ChannelResponseDto create(@RequestBody(description = "생성할 채널의 이름 (필수 필드, 공백 불가)", required = true)
+    @org.springframework.web.bind.annotation.RequestBody @Valid ChannelRequestDto request){
         Channel channel = channelRepository.save(request);
         return new ChannelResponseDto(channel.getId());
     }
 
     @GetMapping
+    @Operation(summary = "전체 채팅 채널 조회 API", description = "전체 채팅 채널을 조회할 수 있는 API입니다. " +
+            "조회 성공 시 모든 채널의 ID와 이름을 리스트 형식으로 반환합니다.")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "요청이 정상적으로 수행되었습니다."),
+    })
     public List<Channel> getAll() {
         return channelRepository.findAll();
     }
 
     @PatchMapping("/{channelId}")
+    @Operation(summary = "채팅 채널명 변경 API", description = "사용자로부터 변경할 채널의 ID와 이름을 받아 채널명을 변경하는 API입니다. ")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "채널명이 변경되었습니다."),
+            @ApiResponse(responseCode = "400", description = "잘못된 형식의 요청입니다. " +
+                    "필수 필드의 값이 주어지지 않았거나 존재하지 않는 채널 ID일 수 있습니다.")
+    })
+    @Parameters({
+            @Parameter(name = "channelId", description = "변경할 채널의 ID (path variable, 필수 필드)", example = "1"),
+    })
     public void update(@PathVariable @ExistChannel Long channelId,
-                       @RequestBody @Valid ChannelRequestDto request) {
+                       @RequestBody(description = "변경할 채널명 (필수 필드, 공백 불가)", required = true)
+                       @org.springframework.web.bind.annotation.RequestBody @Valid ChannelRequestDto request) {
         channelRepository.update(channelId, request);
     }
 
     @DeleteMapping("/{channelId}")
+    @Operation(summary = "채팅 채널 삭제 API", description = "사용자로부터 채널의 ID를 받아 채널을 삭제하는 API입니다. ")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "채널이 삭제되었습니다."),
+            @ApiResponse(responseCode = "400", description = "잘못된 형식의 요청입니다. " +
+                    "필수 필드의 값이 주어지지 않았거나 존재하지 않는 채널 ID일 수 있습니다.")
+    })
+    @Parameters({
+            @Parameter(name = "channelId", description = "삭제할 채널의 ID (path variable, 필수 필드)", example = "1"),
+    })
     public void delete(@PathVariable @ExistChannel Long channelId) {
         channelRepository.delete(channelId);
     }
