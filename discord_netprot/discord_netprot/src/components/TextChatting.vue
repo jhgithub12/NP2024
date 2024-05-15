@@ -57,8 +57,6 @@ onMounted(() => {
         <div class = "top-bar">
             <img alt="number sign" class="logo" src="@/assets/number_sign.svg" width="15" height="15" />
             <p class = "channel-name">{{ msg }}</p>
-            <div class = "topbar-filler"></div>
-            <button class = "text-chat-button" @click="switchChannel">Switch</button>
         </div>
         <div class = "division-bar"></div>
         <div class = "text-area">
@@ -84,6 +82,7 @@ onMounted(() => {
     flex-direction: column;
 }
 .top-bar {
+    border-top-left-radius: 15px;
     user-select: none; 
     width: 100%;
     height: 32px;
@@ -131,6 +130,7 @@ onMounted(() => {
     background-color: #313338;
 }
 .input-area {
+    border-bottom-left-radius: 15px;
     width: 100%;
     height: 60px;
     background-color: #313338;

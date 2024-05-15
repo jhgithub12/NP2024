@@ -3,6 +3,8 @@ import { ref } from 'vue'
 import { RouterLink, RouterView } from 'vue-router'
 import CurrentlyOnline from './components/CurrentlyOnline.vue'
 import ChannelsAvailable from './components/ChannelsAvailable.vue';
+import VoiceVideo from './components/VoiceVideo.vue';
+import TextChatting from './components/TextChatting.vue';
 
 import { defineComponent } from 'vue';
 </script>
@@ -40,7 +42,10 @@ import { defineComponent } from 'vue';
         </div>
       </div>
       <div class = "router-container">
-        <RouterView class = "router-view"/>
+        <!--<RouterView class = "router-view"/>-->
+        <VoiceVideo class = "voicevideo-area"/>
+        <div class = "filler-area"></div>
+        <TextChatting class = "text-area"/>
       </div>
     </div>
   </div>
@@ -73,11 +78,24 @@ import { defineComponent } from 'vue';
   flex-direction: column;
 }
 .router-container {
+  display: flex;
+  flex-direction: row;
   flex: 1;
 }
 .router-view {
   flex: 1;
-  display: flex
+  display: flex;
+}
+.voicevideo-area{
+  width: 69.5%;
+}
+.filler-area{
+  width: .5%;
+  background-color: #1E1F22;
+}
+.text-area{
+  width: 30%;
+  background-color: #1E1F22;
 }
 .bottom-bar {
   user-select: none; 

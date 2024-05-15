@@ -51,8 +51,6 @@ const selectVideoBox = (index: number) => {
         <div class = "top-bar">
             <img alt="number sign" class="logo" src="@/assets/speaker_icon.svg" width="15" height="15" />
             <p class = "channel-name">{{ msg }}</p>
-            <div class = "topbar-filler"></div>
-            <button class = "text-chat-button" @click="switchChannel">Switch</button>
         </div>
         <div class = "division-bar"></div>
         <div class = "video-area">
@@ -76,11 +74,12 @@ const selectVideoBox = (index: number) => {
 .full-area {
     width: 100%;
     height: 100%;
-    background-color: blueviolet;
+    background-color: #1E1F22;
     display: flex;
     flex-direction: column;
 }
 .top-bar {
+    border-top-right-radius: 15px;
     user-select: none; 
     width: 100%;
     height: 32px;
@@ -169,6 +168,7 @@ const selectVideoBox = (index: number) => {
     cursor: pointer;
 }
 .buttons-area {
+    border-bottom-right-radius: 15px;
     width: 100%;
     height: 90px;
     background-color: #313338;
