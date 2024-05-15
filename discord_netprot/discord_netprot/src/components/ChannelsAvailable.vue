@@ -1,10 +1,13 @@
 <script setup lang="ts">
-import { ref } from 'vue'
+import { ref, onMounted, onUnmounted } from 'vue'
 import router from '@/router';
 import CreateChannel from './CreateChannel.vue';
 import { useChannelStore } from '@/stores/channelStore';
 
 const showModal = ref(false)
+const showContextMenu = ref(false)
+const contextMenuPosition = ref({ x: 0, y: 0 })
+const selectedChannel = ref<Channel | null>(null)
 
 interface Channel {
   id: number;
@@ -13,8 +16,8 @@ interface Channel {
 }
 
 const channels = ref<Channel[]>([
-  { id: 1, name: 'General', type: 0 },
-  { id: 2, name: 'Music' , type: 1},
+  { id: 1, name: 'Channel 1', type: 0 },
+  { id: 2, name: 'Channel 2' , type: 0},
   // Add more channels as needed
 ]);
 
@@ -43,6 +46,35 @@ const closeModal = () => {
   showModal.value = false
 }
 
+const openContextMenu = (event: MouseEvent, channel: Channel) => {
+  event.preventDefault();
+  selectedChannel.value = channel;
+  showContextMenu.value = true;
+  contextMenuPosition.value = { x: event.clientX, y: event.clientY };
+}
+
+const deleteChannel = () => {
+  if (selectedChannel.value) {
+    channels.value = channels.value.filter(channel => channel.id !== selectedChannel.value!.id);
+    selectedChannel.value = null;
+    showContextMenu.value = false;
+  }
+}
+
+const closeContextMenu = () => {
+  showContextMenu.value = false;
+  selectedChannel.value = null;
+}
+
+onMounted(() => {
+  document.addEventListener('click', closeContextMenu);
+});
+
+onUnmounted(() => {
+  document.removeEventListener('click', closeContextMenu);
+});
+
+
 </script>
 
 
@@ -59,13 +91,23 @@ const closeModal = () => {
         </div>
         <div class = "division-bar"></div>
         <div class = "channel-buttons">
-          <button class = "select-channel" v-for="channel in channels" :key="channel.id" @click="joinChannel(channel)">
-            <img v-if="channel.type === 0"alt="number sign" class="logo" src="@/assets/number_sign.svg" width="12" height="12" />
-            <img v-else alt="speaker icon" class="logo" src="@/assets/speaker_icon.svg" width="12" height="12" />
+          <button 
+            class = "select-channel" 
+            v-for="channel in channels" 
+            :key="channel.id" 
+            @click="joinChannel(channel)"
+            @contextmenu="openContextMenu($event, channel)"
+            >
+            <!--<img v-if="channel.type === 0"alt="number sign" class="logo" src="@/assets/number_sign.svg" width="12" height="12" />-->
+            <img alt="number sign" class="logo" src="@/assets/number_sign.svg" width="12" height="12" />
+            <!--<img v-else alt="speaker icon" class="logo" src="@/assets/speaker_icon.svg" width="12" height="12" />-->
               {{ channel.name }}
           </button>
         </div>
         <CreateChannel :show="showModal" @createChannel="createChannel" @closeModal="closeModal"/>
+        <div v-if="showContextMenu" class="context-menu" :style="{ top: `${contextMenuPosition.y}px`, left: `${contextMenuPosition.x}px` }">
+          <button @click="deleteChannel">Delete Channel</button>
+        </div>
     </div>
 </template>
 
@@ -122,5 +164,28 @@ h1 {
   background-color: #404249;
   border-radius: 5px;
   width: 100%;
+}
+.context-menu {
+  position: absolute;
+  background-color: #DA373C;
+  border: none;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+  z-index: 1000;
+  display: flex;
+  flex-direction: column;
+  border-radius: 10px;
+}
+.context-menu button {
+  padding: 10px;
+  border: none;
+  background: none;
+  cursor: pointer;
+  text-align: left;
+  width: 100%;
+}
+.context-menu button:hover {
+  background-color: #a12828;
+  border: none;
+  border-radius: 10px;
 }
 </style>

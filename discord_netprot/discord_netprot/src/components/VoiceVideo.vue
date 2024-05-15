@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { ref, onMounted, watch, markRaw } from 'vue'
+import router from '@/router';
 import { useChannelStore } from '@/stores/channelStore';
 import VideoBox from './VideoBox.vue';
 
@@ -8,6 +9,11 @@ const msg = ref('');
 watch(() => useChannelStore().msg, (newValue) => {
     msg.value = newValue;
 });
+
+const switchChannel = () => {
+    console.log("cheese");
+    router.push('/text');
+};
 
 const endCall = () => {
     console.log('Ending call');
@@ -45,6 +51,8 @@ const selectVideoBox = (index: number) => {
         <div class = "top-bar">
             <img alt="number sign" class="logo" src="@/assets/speaker_icon.svg" width="15" height="15" />
             <p class = "channel-name">{{ msg }}</p>
+            <div class = "topbar-filler"></div>
+            <button class = "text-chat-button" @click="switchChannel">Switch</button>
         </div>
         <div class = "division-bar"></div>
         <div class = "video-area">
@@ -80,6 +88,25 @@ const selectVideoBox = (index: number) => {
     display: flex;
     align-items: center;
     justify-content: left;
+}
+.topbar-filler{
+    flex: 1;
+}
+.text-chat-button{
+    width: 5%;
+    height: 90%;
+    color: #1E1F22;
+    background-color: #B5BAC1;
+    border: none;
+    border-radius: 15px;
+    cursor: pointer;
+    padding: 10px;
+    text-align: center;
+    font-weight: bold;
+    text-justify: center;
+}
+.text-chat-button:hover{
+    background-color: #DBDEE1;
 }
 .logo{ 
     margin-left: 10px;

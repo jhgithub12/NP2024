@@ -46,25 +46,7 @@ export default {
             <div class = "header">
                 <h1>Create Channel</h1>
             </div>
-            <div class ="type-selection">
-                <h2>CHANNEL TYPE</h2>
-                <button 
-                    class ="type-button" 
-                    :class="{ 'selected': channelType === 0 }" 
-                    @click="selectType(0)"
-                >Text
-                <img v-if = "channelType == 0" alt="Channel icon" class="logo" src="@/assets/selected.svg"/>
-                <img v-else alt="Channel icon" class="logo" src="@/assets/unselected.svg"/>
-                </button>
-                <button 
-                    class ="type-button" 
-                    :class="{ 'selected': channelType === 1 }" 
-                    @click="selectType(1)"
-                >Voice
-                <img v-if = "channelType == 1" alt="Channel icon" class="logo" src="@/assets/selected.svg"/>
-                <img v-else alt="Channel icon" class="logo" src="@/assets/unselected.svg"/>
-                </button>
-            </div>
+            
             <!-- Input field for channel name -->
             <div class ="input-field">
                 <h2>CHANNEL NAME</h2>
@@ -94,8 +76,8 @@ export default {
 }
 .modal-box {
     width: 300px;
-    min-height: 300px;
-    border-radius: 15%;
+    min-height: 150px;
+    border-radius: 25px;
     background-color: #313338;
     padding: 20px;
     display: flex;
