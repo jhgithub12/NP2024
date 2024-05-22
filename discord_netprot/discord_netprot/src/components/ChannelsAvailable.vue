@@ -34,7 +34,7 @@ const joinChannel = (channel: Channel) => {
   
 };
 
-const createChannel = (channelData: { name: string, type: number }) => {
+const createChannel = (channelData: { name: string, type: number, id:number }) => {
   // Logic to create the channel using the provided data
   const newChannel: Channel = {id: channels.value.length + 1, name: channelData.name, type: channelData.type};
 ;  channels.value.push(newChannel);

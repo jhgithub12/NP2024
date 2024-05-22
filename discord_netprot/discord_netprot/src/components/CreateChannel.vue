@@ -1,5 +1,6 @@
 <script lang="ts">
 import { ref } from 'vue'
+import axios from 'axios';
 
 export default {
   props: {
@@ -19,9 +20,24 @@ export default {
     }
   },
   methods: {
-    createChannel() {
-        // Emit an event to pass channel data to the parent component
-        this.$emit('createChannel', { name: this.channelName, type: this.channelType })
+    async createChannel() {        
+        let channelId: number | null = null;
+        try {
+            const response = await axios.post('http://localhost:8080/channels', {
+                name: this.channelName
+            });
+            channelId = response.data.channelId;
+        } catch (error) {
+            console.error('POST ERROR:', error);
+            return;
+        }
+
+        if (channelId !== null) {
+            this.$emit('createChannel', { name: this.channelName, type: this.channelType, id: channelId })
+        } else {
+            console.error('Channel ID is null, channel creation failed');
+        }
+
         this.channelName = "";
         this.channelType = 0;
     },
