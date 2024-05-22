@@ -1,10 +1,59 @@
 <script setup lang="ts">
-import { ref } from 'vue'
-const usersOnline = ref(false)
-const selfConnected = ref(false)
-setTimeout(() => {
-  usersOnline.value = true // Simulate users coming online after a delay
-}, 3000)
+import { ref, onMounted, onUnmounted, watch } from 'vue'
+const isEmpty = ref(false);
+
+interface dpInfo{
+    id: number;
+    src: string;
+    alt: string;
+}
+
+const images = ref<dpInfo[]>([
+  { id: 1, src: '/src/assets/sample/sample_dp.png', alt: 'Description of image 1' },
+  // Add more images as needed
+]);
+
+
+interface userInfo{
+    id: number;
+    name: string;
+    dp: number;
+}
+const users = ref<userInfo[]>([
+  { id: 1, name: 'Jeho', dp: 1 },
+  { id: 2, name: 'Boyeon', dp: 1},
+  //List of users that are online
+  //To be retrieved from the server
+]);
+
+const checkIfUsersArrayIsEmpty = () => {
+  isEmpty.value = users.value.length === 0;
+  console.log('Checking if users array is empty:', isEmpty.value);
+};
+
+
+let intervalId: number | null = null;
+
+onMounted(() => {
+    intervalId = setInterval(checkIfUsersArrayIsEmpty, 1000); // Check every second
+});
+
+onUnmounted(() => {
+  if (intervalId !== null) {
+    clearInterval(intervalId);
+  }
+});
+
+// Watch the users array and log when it changes
+watch(users, (newUsers) => {
+  console.log('Users array updated:', newUsers);
+});
+
+// Function to get the image source based on user dp id
+const getImageSrc = (dpId: number) => {
+  const image = images.value.find(img => img.id === dpId);
+  return image ? image.src : '';
+};
 </script>
 
 <template>
@@ -19,8 +68,14 @@ setTimeout(() => {
         </header>
         <div class = "division-bar"></div>
         <div class = "user-list">
-            <h1 v-if="!usersOnline">There are no users online</h1>
-            <h1 v-else>List of users online (to do)</h1>
+            <h1 v-if="isEmpty">There are no users online</h1>
+            <p 
+                class ="users" 
+                v-for="user in users" 
+                :key="user.id">
+                <img :src="getImageSrc(user.dp)" alt="Profile Picture" class="profile-picture" />
+                {{ user.name }}
+            </p>
         </div>
     </div>
 
@@ -42,6 +97,25 @@ setTimeout(() => {
 }
 .user-list {
     flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+.users{
+    user-select: none; 
+    width: 100%;
+    padding: 10px;
+    background-color: transparent;
+    color: #949BA4;
+    border: none;
+    text-align: left;
+    font-weight: bold;
+    text-justify: center;
+}
+.profile-picture{
+    width: 30px;
+    height: 30px;
+    border-radius: 10px;
 }
 h1 {
     text-align: center;

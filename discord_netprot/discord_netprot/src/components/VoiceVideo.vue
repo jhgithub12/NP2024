@@ -10,6 +10,7 @@ watch(() => useChannelStore().msg, (newValue) => {
     msg.value = newValue;
 });
 
+//deprecated function: switching button removed
 const switchChannel = () => {
     console.log("cheese");
     router.push('/text');
@@ -62,7 +63,7 @@ const selectVideoBox = (index: number) => {
             </div>
         </div>
         <div class = "buttons-area">
-            <button class ="hangup-button" @click="addVideoBox">
+            <button class ="hangup-button" @click="endCall">
                 <img alt="end call" class="end-call" src="@/assets/end_call.svg"/>
             </button>
         </div>

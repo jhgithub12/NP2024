@@ -1,6 +1,4 @@
 <script lang="ts">
-import { ref } from 'vue'
-
 export default {
   props: {
     // Declare the showModal prop
@@ -9,58 +7,49 @@ export default {
   data() {
     return {
       // Remove unnecessary data property
-      channelName: '' as string,
-      channelType: 0 as number,
+      userName: '' as string,
+      //channelType: 0 as number,
     }
   },
   computed: {
     isCreateDisabled() {
-      return this.channelName.trim() === ''; // Disable button if channel name is empty
+      return this.userName.trim() === ''; // Disable button if channel name is empty
     }
   },
   methods: {
-    createChannel() {
+    joinServer() {
         // Emit an event to pass channel data to the parent component
-        this.$emit('createChannel', { name: this.channelName, type: this.channelType })
-        this.channelName = "";
-        this.channelType = 0;
-    },
-    closeModal() {
-        this.channelName = "";
-        this.channelType = 0;
-        // Emit an event to close the modal
-        this.$emit('closeModal')
-    },
-    selectType(type: number) {
-        // Function to select the channel type
-        this.channelType = type;
+        this.$emit('joinServer', this.userName)// type: this.channelType })
+        this.userName = "";
+        //this.channelType = 0;
     }
   }
 }
 </script>
 
+
 <template>
     <!-- Use showModal prop to control visibility -->
-    <div v-if="show" class="modal-area" @click="closeModal">
+    <div v-if="show" class="modal-area">
+        <img alt="background image" class="background-image" src="@/assets/background.svg"  />
         <div class ="modal-box" :class="{ 'show': show }" @click.stop>
             <div class = "header">
-                <h1>Create Channel</h1>
+                <h1>Join Server</h1>
             </div>
             
             <!-- Input field for channel name -->
             <div class ="input-field">
-                <h2>CHANNEL NAME</h2>
-                <input class ="channel-name" type="text" v-model="channelName" placeholder="# new-channel" />
+                <h2>USER NAME</h2>
+                <input class ="user-name" type="text" v-model="userName" placeholder=" enter username here" />
             </div>
             <div class ="create-close">
-                <!-- Buttons to confirm or cancel channel creation -->
-                <button class ="cancel-button" @click="closeModal">Cancel</button>
-                <button class ="create-button" @click="createChannel" :disabled="isCreateDisabled">Create Channel</button>
+                <!-- Login Button -->
+                <button class ="login-button" @click="joinServer" :disabled="isCreateDisabled">LOGIN</button>
             </div>
         </div>
     </div>
 </template>
-  
+
 <style scoped>
 /* Styles for the modal */
 .modal-area {
@@ -69,10 +58,16 @@ export default {
     left: 0;
     width: 100%;
     height: 100%;
-    background-color: rgba(0, 0, 0, 0.5); /* semi-transparent black background */
+    background-color: rgba(64, 78, 287, 1); /* semi-transparent black background */
     display: flex;
     justify-content: center; /* center horizontally */
     align-items: center; /* center vertically */
+}
+.background-image{
+    position: fixed;
+    width: 80%;
+    height: 80%;
+    bottom: 0;
 }
 .modal-box {
     width: 300px;
@@ -139,7 +134,7 @@ h2 {
     text-align: left;
     padding-bottom: 5px;
 }
-.channel-name {
+.user-name {
     background-color: #1E1F22;
     color: #E6E7EA;
     font-size: 120%;
@@ -152,55 +147,41 @@ h2 {
     height: 30%;
     width: 100%;
     display: flex;
-    justify-content: flex-end; /* center horizontally */
+    justify-content: center; /* center horizontally */
     align-items: center; /* center vertically */
     flex: 1;
 }
-.cancel-button {
-    background-color: transparent;
-    border: none;
-    color: #E6E7EA;
-    font-size: 80%;
-    max-width: 100%;
-    font-weight: bold;
-    margin-right: 15px;
-    cursor: pointer;
-    text-decoration: none;
-}
-.create-button {
-    width: 40%;
-    height: 30px;
+.login-button {
+    width: 60%;
+    height: 45px;
     background-color: #5865F2;
     border: none;
     color: #E6E7EA;
-    font-size: 80%;
+    font-size: 90%;
     max-width: 100%;
     font-weight: bold;
     margin-right: 15px;
     cursor: pointer;
     border-radius: 5px 5px;
 }
-.create-button[disabled] {
-    width: 40%;
-    height: 30px;
+.login-button[disabled] {
+    width: 60%;
+    height: 45px;
     background-color: #414991;
     border: none;
     color: #7F8196;
-    font-size: 80%;
+    font-size: 90%;
     max-width: 100%;
     font-weight: bold;
     margin-right: 15px;
     cursor: pointer;
     border-radius: 5px 5px;
 }
-.cancel-button:hover {
-    text-decoration: underline;
-}
-.create-button[disabled]:hover {
+.login-button[disabled]:hover {
     cursor: not-allowed;
 }
-.create-button:not([disabled]):hover {
+.login-button:not([disabled]):hover {
     background-color: #4752C4;
 }
+
 </style>
-  

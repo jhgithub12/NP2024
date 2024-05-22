@@ -5,8 +5,19 @@ import CurrentlyOnline from './components/CurrentlyOnline.vue'
 import ChannelsAvailable from './components/ChannelsAvailable.vue';
 import VoiceVideo from './components/VoiceVideo.vue';
 import TextChatting from './components/TextChatting.vue';
+import LogInSystem from './components/LogInSystem.vue';
 
 import { defineComponent } from 'vue';
+
+
+const showModal = ref(true)
+const userName = ref('')
+
+const joinServer =( name: string )=>{
+  userName.value = name;
+  showModal.value = false // Close the modal after server join
+}
+
 </script>
 
 <template>
@@ -26,6 +37,7 @@ import { defineComponent } from 'vue';
   <RouterView />
   -->
   <div class = "app-area">
+    <LogInSystem :show="showModal" @joinServer="joinServer"/>
     <div class = "top-bar">
       <header>
         <h1>Discord</h1>
@@ -38,7 +50,7 @@ import { defineComponent } from 'vue';
         <div class = "bottom-bar">
           <!-- USER INFORMATION (사용자 정보)-->
           <img alt="Profile picture" class="dp" src="@/assets/sample/sample_dp.png" />
-          <div class = "username">Arthur Okonkwo</div>
+          <div class = "username">{{ userName }}</div>
         </div>
       </div>
       <div class = "router-container">

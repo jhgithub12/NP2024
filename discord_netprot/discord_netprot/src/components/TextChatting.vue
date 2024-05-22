@@ -10,23 +10,32 @@ watch(() => useChannelStore().msg, (newValue) => {
   msg.value = newValue;
 });
 
-const switchChannel = () => {
-    console.log("cheese");
-    router.push('/voicevideo');
-};
+interface Message {
+    text: string;
+    senderName: string;
+    profilePictureUrl: string;
+}
 
 // Define a ref to store the typed messages
-const typedMessages = ref<string[]>([])
+const typedMessages = ref<Message[]>([]);
 // Define a ref to store the current message being typed
 const currentMessage = ref<string>('')
 // Define a ref to store the messages container reference
 const messagesRef = ref<HTMLDivElement | null>(null);
+    const currentUser = ref<{ name: string; profilePictureUrl: string }>({
+    name: 'John Doe', // Example user name
+    profilePictureUrl: 'path/to/profile/picture.jpg' // Example profile picture URL
+});
 
 // Function to handle sending a message
 const sendMessage = () => {
     if (currentMessage.value.trim() !== '') {
-        typedMessages.value.push(currentMessage.value)
-        currentMessage.value = ''
+        typedMessages.value.push({
+            text: currentMessage.value,
+            senderName: currentUser.value.name,
+            profilePictureUrl: currentUser.value.profilePictureUrl
+        });
+        currentMessage.value = '';
         setTimeout(() => {
             scrollToBottom();
         }, 50);
@@ -62,7 +71,13 @@ onMounted(() => {
         <div class = "text-area">
             <div class="messages">
                 <!-- Loop through typedMessages and display each message -->
-                <div v-for="(message, index) in typedMessages" :key="index" class="message">{{ message }}</div>
+                <div v-for="(message, index) in typedMessages" :key="index" class="message">
+                    <img :src="message.profilePictureUrl" alt="Profile Picture" class="profile-picture" />
+                    <div class="message-content">
+                        <p class="sender-name">{{ message.senderName }}</p>
+                        <p>{{ message.text }}</p>
+                    </div>
+                </div>
             </div>
         </div>
         <div class = "input-area">
@@ -74,6 +89,33 @@ onMounted(() => {
 </template>
 
 <style scoped>
+.message {
+    display: flex;
+    align-items: flex-start;
+    margin-bottom: 10px;
+}
+
+.profile-picture {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    margin-right: 10px;
+}
+
+.message-content {
+    background-color: #383A40;
+    padding: 10px;
+    border-radius: 5px;
+    max-width: 80%;
+}
+
+.sender-name {
+    font-weight: bold;
+    margin-bottom: 5px;
+    color: #E6E7EA;
+}
+/*Old*/
+
 .full-area {
     width: 100%;
     height: 100%;
@@ -151,7 +193,7 @@ onMounted(() => {
 .messages {
     width: 100%;
     max-width:  80vw;
-    max-height: 86vh;
+    max-height: 80vh;
     overflow-y: auto; /* Enable vertical scrolling */
     padding: 20px; /* Add padding to prevent messages from touching the edges */
     word-wrap: break-word;
