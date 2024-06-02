@@ -6,5 +6,5 @@ import lombok.Getter;
 @Getter
 public class ChannelRequestDto {
     @NotEmpty
-    private String name;
+    private String channelName;
 }

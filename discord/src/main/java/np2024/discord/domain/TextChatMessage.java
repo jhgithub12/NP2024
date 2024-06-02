@@ -7,7 +7,7 @@ import lombok.Getter;
 public class TextChatMessage {
 
     @NotBlank
-    private String senderName;
+    private String username;
 
     @NotBlank
     private String content;

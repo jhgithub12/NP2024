@@ -3,8 +3,18 @@ package np2024.discord.dto;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 
-@Getter
-@AllArgsConstructor
 public class ChannelResponseDto {
-    private Long channelId;
+
+    @Getter
+    @AllArgsConstructor
+    public static class CreateResultDto {
+        private Long channelId;
+    }
+
+    @Getter
+    @AllArgsConstructor
+    public static class GetResultDto {
+        private Long channelId;
+        private String channelName;
+    }
 }

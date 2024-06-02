@@ -11,13 +11,15 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import np2024.discord.domain.Channel;
 import np2024.discord.dto.ChannelRequestDto;
-import np2024.discord.dto.ChannelResponseDto;
+import np2024.discord.dto.ChannelResponseDto.CreateResultDto;
+import np2024.discord.dto.ChannelResponseDto.GetResultDto;
 import np2024.discord.repository.ChannelRepository;
 import np2024.discord.validation.ExistChannel;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/channels")
@@ -35,10 +37,10 @@ public class ChannelController {
             @ApiResponse(responseCode = "201", description = "채널이 생성되었습니다."),
             @ApiResponse(responseCode = "400", description = "잘못된 형식의 요청입니다. 필수 필드의 값이 주어지지 않았을 수 있습니다.")
     })
-    public ChannelResponseDto create(@RequestBody(description = "생성할 채널의 이름 (필수 필드, 공백 불가)", required = true)
+    public CreateResultDto create(@RequestBody(description = "생성할 채널의 이름 (필수 필드, 공백 불가)", required = true)
     @org.springframework.web.bind.annotation.RequestBody @Valid ChannelRequestDto request){
         Channel channel = channelRepository.save(request);
-        return new ChannelResponseDto(channel.getId());
+        return new CreateResultDto(channel.getId());
     }
 
     @GetMapping
@@ -47,8 +49,10 @@ public class ChannelController {
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "요청이 정상적으로 수행되었습니다."),
     })
-    public List<Channel> getAll() {
-        return channelRepository.findAll();
+    public List<GetResultDto> getAll() {
+        return channelRepository.findAll().stream()
+                .map(channel -> new GetResultDto(channel.getId(), channel.getName()))
+                .collect(Collectors.toList());
     }
 
     @PatchMapping("/{channelId}")
