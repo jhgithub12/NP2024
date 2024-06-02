@@ -1,6 +1,5 @@
 <script setup lang="ts">
 import { ref, onMounted, onUnmounted } from 'vue'
-import router from '@/router';
 import CreateChannel from './CreateChannel.vue';
 import { useChannelStore } from '@/stores/channelStore';
 import axios from 'axios';
@@ -20,21 +19,22 @@ const channels = ref<Channel[]>([]);
 const fetchChannels = async () => {
   try {
     const response = await axios.get('http://localhost:8080/channels');
-    channels.value = response.data.map((channel: { id: number, name: string }) => ({
-      ...channel,
-      type: 0 // Assuming all channels are text only by default, modify as needed
+    channels.value = response.data.map((channel: { channelId: number, channelName: string }) => ({
+      id: channel.channelId, // Corrected key access
+      name: channel.channelName, // Corrected key access
     }));
   } catch (error) {
     console.error('Failed to fetch channels:', error);
   }
 };
 
+
 const joinChannel = (channel: Channel) => {
   console.log('Joining channel:', channel.name);
   useChannelStore().setMsg(channel.name);
 };
 
-const createChannel = (channelData: { name: string, type: number, id:number }) => {
+const createChannel = (channelData: { name: string, id:number }) => {
   // Logic to create the channel using the provided data
   const newChannel: Channel = {id: channels.value.length + 1, name: channelData.name};
   //channels.value.push(newChannel);
@@ -84,7 +84,6 @@ onUnmounted(() => {
   document.removeEventListener('click', closeContextMenu);
 });
 
-
 </script>
 
 
@@ -108,9 +107,7 @@ onUnmounted(() => {
             @click="joinChannel(channel)"
             @contextmenu="openContextMenu($event, channel)"
             >
-            <!--<img v-if="channel.type === 0"alt="number sign" class="logo" src="@/assets/number_sign.svg" width="12" height="12" />-->
             <img alt="number sign" class="logo" src="@/assets/number_sign.svg" width="12" height="12" />
-            <!--<img v-else alt="speaker icon" class="logo" src="@/assets/speaker_icon.svg" width="12" height="12" />-->
               {{ channel.name }}
           </button>
         </div>

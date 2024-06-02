@@ -11,7 +11,6 @@ export default {
     return {
       // Remove unnecessary data property
       channelName: '' as string,
-      channelType: 0 as number,
     }
   },
   computed: {
@@ -24,7 +23,7 @@ export default {
         let channelId: number | null = null;
         try {
             const response = await axios.post('http://localhost:8080/channels', {
-                name: this.channelName
+                channelName: this.channelName
             });
             channelId = response.data.channelId;
         } catch (error) {
@@ -33,24 +32,18 @@ export default {
         }
 
         if (channelId !== null) {
-            this.$emit('createChannel', { name: this.channelName, type: this.channelType, id: channelId })
+            this.$emit('createChannel', { name: this.channelName, id: channelId })
         } else {
             console.error('Channel ID is null, channel creation failed');
         }
 
         this.channelName = "";
-        this.channelType = 0;
     },
     closeModal() {
         this.channelName = "";
-        this.channelType = 0;
         // Emit an event to close the modal
         this.$emit('closeModal')
     },
-    selectType(type: number) {
-        // Function to select the channel type
-        this.channelType = type;
-    }
   }
 }
 </script>
