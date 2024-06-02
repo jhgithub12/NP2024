@@ -3,6 +3,7 @@ import { ref, onMounted, onUnmounted } from 'vue'
 import router from '@/router';
 import CreateChannel from './CreateChannel.vue';
 import { useChannelStore } from '@/stores/channelStore';
+import axios from 'axios';
 
 const showModal = ref(false)
 const showContextMenu = ref(false)
@@ -12,32 +13,31 @@ const selectedChannel = ref<Channel | null>(null)
 interface Channel {
   id: number;
   name: string;
-  type: number; //0 for text only, 1 for voice + video
 }
 
-const channels = ref<Channel[]>([
-  { id: 1, name: 'Channel 1', type: 0 },
-  { id: 2, name: 'Channel 2' , type: 0},
-  // Add more channels as needed
-]);
+const channels = ref<Channel[]>([]);
+
+const fetchChannels = async () => {
+  try {
+    const response = await axios.get('http://localhost:8080/channels');
+    channels.value = response.data.map((channel: { id: number, name: string }) => ({
+      ...channel,
+      type: 0 // Assuming all channels are text only by default, modify as needed
+    }));
+  } catch (error) {
+    console.error('Failed to fetch channels:', error);
+  }
+};
 
 const joinChannel = (channel: Channel) => {
   console.log('Joining channel:', channel.name);
-  if (channel.type == 0){
-    useChannelStore().setMsg(channel.name);
-    router.push('/text');
-  }
-  else if (channel.type == 1){
-    useChannelStore().setMsg(channel.name);
-    router.push('/voicevideo');
-  }
-  
+  useChannelStore().setMsg(channel.name);
 };
 
 const createChannel = (channelData: { name: string, type: number, id:number }) => {
   // Logic to create the channel using the provided data
-  const newChannel: Channel = {id: channels.value.length + 1, name: channelData.name, type: channelData.type};
-;  channels.value.push(newChannel);
+  const newChannel: Channel = {id: channels.value.length + 1, name: channelData.name};
+  //channels.value.push(newChannel);
   console.log('Creating channel:', channelData)
   showModal.value = false // Close the modal after channel creation
 }
@@ -53,20 +53,30 @@ const openContextMenu = (event: MouseEvent, channel: Channel) => {
   contextMenuPosition.value = { x: event.clientX, y: event.clientY };
 }
 
-const deleteChannel = () => {
+const deleteChannel = async () => {
   if (selectedChannel.value) {
-    channels.value = channels.value.filter(channel => channel.id !== selectedChannel.value!.id);
+    const channelId = selectedChannel.value.id;
+    try {
+      await axios.delete(`http://localhost:8080/channels/${channelId}`);
+      channels.value = channels.value.filter(channel => channel.id !== channelId);
+      console.log(`Deleted channel with ID: ${channelId}`);
+    } catch (error) {
+      console.error(`Failed to delete channel with ID: ${channelId}`, error);
+    }
     selectedChannel.value = null;
     showContextMenu.value = false;
   }
-}
+};
 
 const closeContextMenu = () => {
   showContextMenu.value = false;
   selectedChannel.value = null;
 }
 
+let intervalId: number | null = null;
+
 onMounted(() => {
+  intervalId = setInterval(fetchChannels, 1000); // Check every second
   document.addEventListener('click', closeContextMenu);
 });
 

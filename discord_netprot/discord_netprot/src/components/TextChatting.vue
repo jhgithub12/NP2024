@@ -1,13 +1,20 @@
 <script setup lang="ts">
-import { ref, onMounted, watch } from 'vue'
+import { ref, onMounted, onUnmounted, watch } from 'vue'
+import { io } from 'socket.io-client';
 import router from '@/router';
 import { useChannelStore } from '@/stores/channelStore';
+
+const socket = io('http://localhost:8080', {
+  transports: ['websocket']
+});
 
 
 const msg = ref('');
 // Watch for changes in the message stored in ChannelStore
 watch(() => useChannelStore().msg, (newValue) => {
   msg.value = newValue;
+  // Re-subscribe to the new channel when it changes
+  socket.emit('joinChannel', useChannelStore().msg);
 });
 
 interface Message {
@@ -29,18 +36,23 @@ const messagesRef = ref<HTMLDivElement | null>(null);
 
 // Function to handle sending a message
 const sendMessage = () => {
-    if (currentMessage.value.trim() !== '') {
-        typedMessages.value.push({
-            text: currentMessage.value,
-            senderName: currentUser.value.name,
-            profilePictureUrl: currentUser.value.profilePictureUrl
-        });
-        currentMessage.value = '';
-        setTimeout(() => {
-            scrollToBottom();
-        }, 50);
-    }
-}
+  if (currentMessage.value.trim() !== '') {
+    const message = {
+      text: currentMessage.value,
+      senderName: currentUser.value.name,
+      profilePictureUrl: currentUser.value.profilePictureUrl
+    };
+    socket.emit('sendMessage', {
+      channel: useChannelStore().msg,
+      message
+    });
+    currentMessage.value = '';
+    setTimeout(() => {
+      scrollToBottom();
+    }, 50);
+  }
+};
+
 // Function to scroll to the bottom of the messages
 const scrollToBottom = () => {
     if (messagesRef.value) {
@@ -51,11 +63,23 @@ const scrollToBottom = () => {
     }
 };
 
+socket.on('receiveMessage', (message: Message) => {
+  typedMessages.value.push(message);
+  setTimeout(() => {
+    scrollToBottom();
+  }, 50);
+});
+
 onMounted(() => {
     // Assign the messages container reference when the component is mounted
     msg.value = useChannelStore().msg;
     messagesRef.value = document.querySelector('.messages');
+    socket.emit('joinChannel', useChannelStore().msg);
     scrollToBottom();
+});
+
+onUnmounted(() => {
+  socket.disconnect();
 });
 </script>
 
