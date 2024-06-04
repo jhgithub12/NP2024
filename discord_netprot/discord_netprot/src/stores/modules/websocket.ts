@@ -2,16 +2,20 @@
 import { defineStore } from 'pinia';
 import axios from 'axios';
 import WebSocketService from '@/services/WebSocketService';
+import { ref } from 'vue';
 
 export const useWebSocketStore = defineStore('websocket', {
   state: () => ({
     connected: false,
+    localStream: null as MediaStream | null,
     currentChannelId: null as string | null,
     currentSubscriptionId: null as string | null,
     username: '',  // Add username to the state
     userList: [] as string[],
     channelList: [] as { id: string, name: string }[],
     messageList: [] as { username: string, content: string }[],
+    localVideoElement: null as HTMLVideoElement | null,  // Initialize as null
+    remoteVideoElement: [] as HTMLVideoElement[], // Initialize as null
   }),
   actions: {
     setUsername(username: string) {  // Add an action to set the username
@@ -80,5 +84,21 @@ export const useWebSocketStore = defineStore('websocket', {
           console.error('Failed to load channel list');
         });
     },
+    async setVideoStream() {
+      if (this.localVideoElement) {
+        this.localStream = await WebSocketService.setVideoStream(this.localVideoElement);
+      } else {
+        console.error('Local video element is not set');
+      }
+    },
+    joinVideoChannel() {
+      if (this.currentChannelId) {
+        if (this.localVideoElement && this.remoteVideoElement) { // Ensure elements are not null
+          WebSocketService.joinVideoChannel(this.currentChannelId, this.username, this.localVideoElement, this.remoteVideoElement);
+        } else {
+          console.error('Video elements are not set');
+        }
+      }
+    }
   }
 });

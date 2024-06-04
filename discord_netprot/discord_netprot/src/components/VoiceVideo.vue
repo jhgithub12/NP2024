@@ -1,8 +1,12 @@
 <script setup lang="ts">
 import { ref, onMounted, watch, markRaw } from 'vue'
-import router from '@/router';
 import { useChannelStore } from '@/stores/channelStore';
-import VideoBox from './VideoBox.vue';
+import { useWebSocketStore } from '@/stores/modules/websocket';
+
+
+const joinedCall = ref(false)
+const joinedVideo = ref(false)
+const joinedChannel = ref(false)
 
 const msg = ref('');
 // Watch for changes in the message stored in ChannelStore
@@ -10,39 +14,81 @@ watch(() => useChannelStore().msg, (newValue) => {
     msg.value = newValue;
 });
 
-//deprecated function: switching button removed
-const switchChannel = () => {
-    console.log("cheese");
-    router.push('/text');
+const localVideoElement = ref<HTMLVideoElement | null>(null);
+const remoteVideoElements = useWebSocketStore().remoteVideoElement;
+
+const startCall = () => {
+    joinedCall.value = true;
+    console.log('Starting call');
+    useWebSocketStore().joinVideoChannel();
+};
+const endCall = () => {
+    joinedCall.value = false;
+    joinedVideo.value = false;
+    console.log('Ending call');
+    //end video channel?????
+};
+const startVideo = () => {
+    joinedVideo.value = true;
+    console.log('Starting video');
+};
+const endVideo = () => {
+    joinedVideo.value = false;
+    console.log('Ending video');
+    // Add logic to end video sharing
 };
 
-const endCall = () => {
-    console.log('Ending call');
-    // Add logic to end the call
-};
+const confirmJoinedChannel= () =>{
+    if (useWebSocketStore().currentChannelId){
+        joinedChannel.value = true;
+    }
+    else{
+        joinedChannel.value = false;
+    }
+}
+
+let intervalId: number | null = null;
 
 onMounted(() => {
+    intervalId = setInterval(confirmJoinedChannel, 100); // Check every second
     // Assign the messages container reference when the component is mounted
     msg.value = useChannelStore().msg;
+
+    // Initialize video elements
+    if (!localVideoElement.value) {
+        localVideoElement.value = document.createElement('video');
+    }
+
+    // Initialize remote video elements
+    for (let i = 0; i < 6; i++) {
+        const remoteVideo = document.createElement('video');
+        remoteVideoElements.push(remoteVideo);
+    }
+
+    // Set the video elements in the WebSocket store
+    useWebSocketStore().localVideoElement = localVideoElement.value;
+    useWebSocketStore().remoteVideoElement = remoteVideoElements;
 });
 
 // Maintain a list of video components
-const videoComponents = ref<(typeof VideoBox)[]>([]); // Specify the type of the array
+const videoComponents = ref<(HTMLVideoElement)[]>([]); // Specify the type of the array
 
 // Track the currently selected video box
-const selectedVideoBox = ref<typeof VideoBox | null>(null);
+const selectedVideoBox = ref<HTMLVideoElement | null>(null);
 
 // Function to add a video box component
 const addVideoBox = () => {
-    console.log('Adding video box');
     if (videoComponents.value.length < 6) {
-        videoComponents.value.push(markRaw(VideoBox));
+        const newVideoElement = document.createElement('video') as HTMLVideoElement;
+        useWebSocketStore().remoteVideoElement.push(newVideoElement);
+        videoComponents.value.push(markRaw(newVideoElement));
     }
+    console.log("adding video box");
 };
 
 // Function to select a video box
 const selectVideoBox = (index: number) => {
-    selectedVideoBox.value = videoComponents.value[index];
+    selectedVideoBox.value = remoteVideoElements[index];
 };
 
 </script>
@@ -57,15 +103,34 @@ const selectVideoBox = (index: number) => {
         <div class = "video-area">
             <div class = "video-box-large-video">
                 <component class = "video-large" :is="selectedVideoBox" v-if="selectedVideoBox" />
+                <video class = "video-large" ref = "localVideoElement" autoplay></video>
             </div>
-            <div class = "video-box">
-                <component class ="video" :is="videoComponent" v-for="(videoComponent, index) in videoComponents" :key="index" @click="selectVideoBox(index)"/>
+            <div class="video-box">
+                <video class = "video" ref="video" v-for="(video, index) in remoteVideoElements" autoplay @click="selectVideoBox(index)"></video>
+                <component class="video" :is="video" v-for="(video, index) in remoteVideoElements" :key="index" @click="selectVideoBox(index)"/>
             </div>
         </div>
         <div class = "buttons-area">
-            <button class ="hangup-button" @click="endCall">
-                <img alt="end call" class="end-call" src="@/assets/end_call.svg"/>
-            </button>
+            <div v-if="joinedCall">
+                <button class ="hangup-button" @click="endCall">
+                    <img alt="end call" class="end-call" src="@/assets/end_call.svg"/>
+                </button>
+            </div>
+            <div v-else-if="!joinedCall && joinedChannel">
+                <button class ="hangup-button" @click="startCall">
+                    <img alt="end call" class="end-call" src="@/assets/start_call.svg"/>
+                </button>
+            </div>
+            <div v-if="joinedVideo && joinedCall">
+                <button class ="hangup-button" @click="endVideo">
+                    <img alt="end call" class="end-call" src="@/assets/end_video.svg"/>
+                </button>
+            </div>
+            <div v-else-if="!joinedVideo && joinedCall">
+                <button class ="hangup-button" @click="startVideo">
+                    <img alt="end call" class="end-call" src="@/assets/start_video.svg"/>
+                </button>
+            </div>
         </div>
     </div>
 
@@ -182,6 +247,7 @@ const selectVideoBox = (index: number) => {
     height: 49px;
     padding: 0; /* Remove padding */
     margin: 0; /* Remove margin */
+    margin-right: 15px;
     background-color: white;
     border-radius: 50%;
     border: none;

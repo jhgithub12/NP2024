@@ -1,5 +1,5 @@
 <script setup lang="ts">
-// Props, data, methods, etc. can be defined here
+
 </script>
 
 

@@ -46,7 +46,6 @@ const users = ref<userInfo[]>([
 
 const checkIfUsersArrayIsEmpty = () => {
   isEmpty.value = users.value.length === 0;
-  console.log('Checking if users array is empty:', isEmpty.value);
 };
 
 
@@ -65,7 +64,8 @@ onUnmounted(() => {
 
 // Watch the users array and log when it changes
 watch(users, (newUsers) => {
-  console.log('Users array updated:', newUsers);
+  //do nothing
+  
 });
 
 // Function to get the image source based on user dp id
