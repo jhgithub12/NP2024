@@ -1,5 +1,6 @@
 // src/stores/websocket.ts
 import { defineStore } from 'pinia';
+import Peer from 'simple-peer';
 import axios from 'axios';
 import WebSocketService from '@/services/WebSocketService';
 
@@ -20,19 +21,30 @@ export const useWebSocketStore = defineStore('websocket', {
     connect() {
       WebSocketService.connect(this.username, () => {
         this.connected = true;
-      }, () => {
+        this.refreshUsers();
+        this.refreshChannels();
+
+        WebSocketService.subscribe("/topic/users", (res) => {
+          const message = JSON.parse(res.body);
+          if (message.eventType === "CONNECT") {
+            this.userList.push(message.username);
+          } else {
+            this.userList = this.userList.filter(username => username !== message.username);
+          }
+        });
+      }, (error) => {
+        console.error("STOMP error:", error);
         this.connected = false;
       });
     },
     subscribeToChannel(channelId: string) {
-      if (this.currentChannelId) {
-        if (this.currentSubscriptionId) {
-          WebSocketService.unsubscribe(this.currentSubscriptionId);
-        }
+      if (this.currentChannelId && this.currentSubscriptionId) {
+        WebSocketService.unsubscribe(this.currentSubscriptionId);
         this.messageList = [];
       }
 
-      const subscription = WebSocketService.subscribe(`/topic/channels/${channelId}/text`, message => {
+      const subscription = WebSocketService.subscribe(`/topic/channels/${channelId}/text`, res => {
+        const message = JSON.parse(res.body);
         this.messageList.push(message);
       });
 

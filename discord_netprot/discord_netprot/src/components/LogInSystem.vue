@@ -1,4 +1,7 @@
 <script lang="ts">
+import { useWebSocketStore } from '@/stores/modules/websocket';
+
+
 export default {
   props: {
     // Declare the showModal prop
@@ -21,7 +24,11 @@ export default {
         // Emit an event to pass channel data to the parent component
         this.$emit('joinServer', this.userName)// type: this.channelType })
         this.userName = "";
-        //this.channelType = 0;
+        this.connect();
+    },
+    connect() {
+        useWebSocketStore().setUsername(this.userName);  // Set the username in the store
+        useWebSocketStore().connect();
     }
   }
 }

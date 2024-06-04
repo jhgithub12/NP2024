@@ -1,48 +1,46 @@
 // src/services/WebSocketService.ts
-import Stomp, { Client, type Subscription } from 'webstomp-client';
+import Peer from 'simple-peer';
 import SockJS from 'sockjs-client';
+import Stomp from 'webstomp-client';
 
 class WebSocketService {
-  private stompClient: Client | null = null;
-  private connected = false;
+  private stompClient: Stomp.Client | null = null;
 
-  connect(username: string, onConnect: () => void, onError: () => void) {
+  connect(username: string, onConnect: () => void, onError: (error: any) => void) {
     const serverURL = 'http://localhost:8080/ws';
     const socket = new SockJS(serverURL);
     this.stompClient = Stomp.over(socket);
 
-    const headers = { username };
+    const headers = {
+      username,
+      'accept-version': '1.1,1.2',
+      'heart-beat': '10000,10000',
+    };
 
-    this.stompClient.connect(headers, () => {
-      this.connected = true;
-      onConnect();
-    }, () => {
-      this.connected = false;
-      onError();
-    });
+    this.stompClient.connect(headers, onConnect, onError);
   }
 
-  subscribe(destination: string, callback: (message: any) => void): Subscription | null {
-    if (this.stompClient && this.connected) {
-      return this.stompClient.subscribe(destination, res => {
-        callback(JSON.parse(res.body));
-      });
+  subscribe(destination: string, callback: (message: Stomp.Message) => void): Stomp.Subscription | null {
+    if (this.stompClient) {
+      return this.stompClient.subscribe(destination, callback);
     }
     return null;
   }
 
   unsubscribe(subscriptionId: string) {
-    this.stompClient?.unsubscribe(subscriptionId);
+    if (this.stompClient) {
+      this.stompClient.unsubscribe(subscriptionId);
+    }
   }
 
   send(destination: string, body: any) {
-    if (this.stompClient && this.connected) {
+    if (this.stompClient && this.stompClient.connected) {
       this.stompClient.send(destination, JSON.stringify(body), {});
     }
   }
 
-  isConnected() {
-    return this.connected;
+  isConnected(): boolean {
+    return this.stompClient ? this.stompClient.connected : false;
   }
 }
 

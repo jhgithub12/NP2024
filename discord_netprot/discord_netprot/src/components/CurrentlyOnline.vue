@@ -1,6 +1,13 @@
 <script setup lang="ts">
 import { ref, onMounted, onUnmounted, watch } from 'vue'
+import { useWebSocketStore } from '@/stores/modules/websocket';
+import axios from 'axios';
+
 const isEmpty = ref(false);
+
+const store = useWebSocketStore();
+const userList = store.userList;
+
 
 interface dpInfo{
     id: number;
@@ -13,6 +20,17 @@ const images = ref<dpInfo[]>([
   // Add more images as needed
 ]);
 
+const fetchUsers = async () => {
+  try {
+    const response = await axios.get('http://localhost:8080/channels');
+    users.value = response.data.map((userlist: { username: string }) => ({
+      name: userlist.username, // Corrected key access
+    }));
+  } catch (error) {
+    console.error('Failed to fetch channels:', error);
+  }
+};
+
 
 interface userInfo{
     id: number;
@@ -20,8 +38,8 @@ interface userInfo{
     dp: number;
 }
 const users = ref<userInfo[]>([
-  { id: 1, name: 'Jeho', dp: 1 },
-  { id: 2, name: 'Boyeon', dp: 1},
+  //{ id: 1, name: 'Jeho', dp: 1 },
+  //{ id: 2, name: 'Boyeon', dp: 1},
   //List of users that are online
   //To be retrieved from the server
 ]);
@@ -73,7 +91,9 @@ const getImageSrc = (dpId: number) => {
                 class ="users" 
                 v-for="user in users" 
                 :key="user.id">
-                <img :src="getImageSrc(user.dp)" alt="Profile Picture" class="profile-picture" />
+                <!-- <img :src="getImageSrc(user.dp)" alt="Profile Picture" class="profile-picture" />-->
+                <img :src="getImageSrc(1)" alt="Profile Picture" class="profile-picture" />
+                <!--{{ user.name }}-->
                 {{ user.name }}
             </p>
         </div>

@@ -6,18 +6,11 @@ import ChannelsAvailable from './components/ChannelsAvailable.vue';
 import VoiceVideo from './components/VoiceVideo.vue';
 import TextChatting from './components/TextChatting.vue';
 import LogInSystem from './components/LogInSystem.vue';
-import { useWebSocketStore } from '@/stores/modules/websocket';
 
 import { defineComponent } from 'vue';
 
-const store = useWebSocketStore();
 const showModal = ref(true)
 const userName = ref('')
-
-const connect = () => {
-  store.setUsername(userName.value);  // Set the username in the store
-  store.connect();
-};
 
 const joinServer =( name: string )=>{
   userName.value = name;
