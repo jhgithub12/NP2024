@@ -11,7 +11,7 @@ class WebSocketService {
     this.stompClient = Stomp.over(socket);
 
     const headers = {
-      username,
+      'username': username,
       'accept-version': '1.0,1.1,1.2', // Ensuring all versions are accepted
       'heart-beat': '10000,10000',
     };

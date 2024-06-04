@@ -2,6 +2,7 @@
 import { ref, onMounted, onUnmounted } from 'vue'
 import CreateChannel from './CreateChannel.vue';
 import { useChannelStore } from '@/stores/channelStore';
+import { useWebSocketStore } from '@/stores/modules/websocket';
 import axios from 'axios';
 
 const showModal = ref(false)
@@ -32,6 +33,7 @@ const fetchChannels = async () => {
 const joinChannel = (channel: Channel) => {
   console.log('Joining channel:', channel.name);
   useChannelStore().setMsg(channel.name);
+  useWebSocketStore().subscribeToChannel(channel.id.toString());
 };
 
 const createChannel = (channelData: { name: string, id:number }) => {

@@ -56,7 +56,7 @@ export const useWebSocketStore = defineStore('websocket', {
     },
     sendMessage(content: string) {
       if (WebSocketService.isConnected()) {
-        const msg = { username: this.username, content };
+        const msg = { username: this.username, content: content };
         WebSocketService.send(`/app/channels/${this.currentChannelId}/text/messages`, msg);
       }
     },

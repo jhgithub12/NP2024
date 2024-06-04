@@ -22,7 +22,7 @@ const images = ref<dpInfo[]>([
 
 const fetchUsers = async () => {
   try {
-    const response = await axios.get('http://localhost:8080/channels');
+    const response = await axios.get('http://localhost:8080/users');
     users.value = response.data.map((userlist: { username: string }) => ({
       name: userlist.username, // Corrected key access
     }));
@@ -53,6 +53,7 @@ const checkIfUsersArrayIsEmpty = () => {
 let intervalId: number | null = null;
 
 onMounted(() => {
+    intervalId = setInterval(fetchUsers, 1000); // Check every second
     intervalId = setInterval(checkIfUsersArrayIsEmpty, 1000); // Check every second
 });
 

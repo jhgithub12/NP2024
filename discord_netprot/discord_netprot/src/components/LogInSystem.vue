@@ -23,8 +23,8 @@ export default {
     joinServer() {
         // Emit an event to pass channel data to the parent component
         this.$emit('joinServer', this.userName)// type: this.channelType })
-        this.userName = "";
         this.connect();
+        this.userName = "";
     },
     connect() {
         useWebSocketStore().setUsername(this.userName);  // Set the username in the store

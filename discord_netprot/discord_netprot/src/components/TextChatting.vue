@@ -14,7 +14,7 @@ interface Message {
     text: string;
     senderName: string;
     profilePictureUrl: string;
-}
+}   
 
 // Define a ref to store the typed messages
 const typedMessages = ref<Message[]>([]);
@@ -35,6 +35,7 @@ const sendMessage = () => {
             senderName: currentUser.value.name,
             profilePictureUrl: currentUser.value.profilePictureUrl
         });
+        useWebSocketStore().sendMessage(currentMessage.value)
         currentMessage.value = '';
         setTimeout(() => {
             scrollToBottom();
@@ -71,11 +72,11 @@ onMounted(() => {
         <div class = "text-area">
             <div class="messages">
                 <!-- Loop through typedMessages and display each message -->
-                <div v-for="(message, index) in typedMessages" :key="index" class="message">
-                    <img :src="message.profilePictureUrl" alt="Profile Picture" class="profile-picture" />
+                <div v-for="(message, index) in useWebSocketStore().messageList" :key="index" class="message">
+                    <img :src="message.content" alt="Profile Picture" class="profile-picture" />
                     <div class="message-content">
-                        <p class="sender-name">{{ message.senderName }}</p>
-                        <p>{{ message.text }}</p>
+                        <p class="sender-name">{{ message.username }}</p>
+                        <p>{{ message.content }}</p>
                     </div>
                 </div>
             </div>
