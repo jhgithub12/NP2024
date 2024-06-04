@@ -1,6 +1,5 @@
 // src/stores/websocket.ts
 import { defineStore } from 'pinia';
-import Peer from 'simple-peer';
 import axios from 'axios';
 import WebSocketService from '@/services/WebSocketService';
 

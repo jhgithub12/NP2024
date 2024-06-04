@@ -1,5 +1,4 @@
 // src/services/WebSocketService.ts
-import Peer from 'simple-peer';
 import SockJS from 'sockjs-client';
 import Stomp from 'webstomp-client';
 
@@ -13,7 +12,7 @@ class WebSocketService {
 
     const headers = {
       username,
-      'accept-version': '1.1,1.2',
+      'accept-version': '1.0,1.1,1.2', // Ensuring all versions are accepted
       'heart-beat': '10000,10000',
     };
 
