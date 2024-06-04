@@ -51,7 +51,6 @@ class WebSocketService {
       const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
       localVideoElement.srcObject = stream;
       this.localStream = stream;
-      this.remoteStreams.push(stream);
       return stream;
     } catch (error) {
       console.error('Error accessing media devices.', error);
