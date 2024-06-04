@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, onMounted, watch, markRaw } from 'vue'
+import { ref, onMounted, watch, markRaw, type ComponentPublicInstance } from 'vue'
 import { useChannelStore } from '@/stores/channelStore';
 import { useWebSocketStore } from '@/stores/modules/websocket';
 
@@ -15,7 +15,7 @@ watch(() => useChannelStore().msg, (newValue) => {
 });
 
 const localVideoElement = ref<HTMLVideoElement | null>(null);
-const remoteVideoElements = useWebSocketStore().remoteVideoElement;
+const allVideoElements = ref<HTMLVideoElement[]>([]);
 
 const startCall = () => {
     joinedCall.value = true;
@@ -54,42 +54,30 @@ onMounted(() => {
     // Assign the messages container reference when the component is mounted
     msg.value = useChannelStore().msg;
 
-    // Initialize video elements
+    // Initialize local video element and add to all video elements
     if (!localVideoElement.value) {
         localVideoElement.value = document.createElement('video');
-    }
-
-    // Initialize remote video elements
-    for (let i = 0; i < 6; i++) {
-        const remoteVideo = document.createElement('video');
-        remoteVideoElements.push(remoteVideo);
+        allVideoElements.value.push(localVideoElement.value);
     }
 
     // Set the video elements in the WebSocket store
     useWebSocketStore().localVideoElement = localVideoElement.value;
-    useWebSocketStore().remoteVideoElement = remoteVideoElements;
+    useWebSocketStore().remoteVideoElement = allVideoElements.value;
+
+    videoComponents.value.push(localVideoElement.value);
 });
 
-// Maintain a list of video components
-const videoComponents = ref<(HTMLVideoElement)[]>([]); // Specify the type of the array
+//모든 video elements에 대한 배열
+const videoComponents = ref<HTMLVideoElement[]>([]);
 
-// Track the currently selected video box
+//현재 선택된 (가장 크게 나올) video element
 const selectedVideoBox = ref<HTMLVideoElement | null>(null);
 
-// Function to add a video box component
-const addVideoBox = () => {
-    if (videoComponents.value.length < 6) {
-        const newVideoElement = document.createElement('video') as HTMLVideoElement;
-        useWebSocketStore().remoteVideoElement.push(newVideoElement);
-        videoComponents.value.push(markRaw(newVideoElement));
-    }
-    console.log("adding video box");
-};
-
-// Function to select a video box
+//영상 선택 함수
 const selectVideoBox = (index: number) => {
-    selectedVideoBox.value = remoteVideoElements[index];
-};
+    selectedVideoBox.value = videoComponents.value[index];
+}
+
 
 </script>
 
@@ -102,12 +90,10 @@ const selectVideoBox = (index: number) => {
         <div class = "division-bar"></div>
         <div class = "video-area">
             <div class = "video-box-large-video">
-                <component class = "video-large" :is="selectedVideoBox" v-if="selectedVideoBox" />
-                <video class = "video-large" ref = "localVideoElement" autoplay></video>
             </div>
             <div class="video-box">
-                <video class = "video" ref="video" v-for="(video, index) in remoteVideoElements" autoplay @click="selectVideoBox(index)"></video>
-                <component class="video" :is="video" v-for="(video, index) in remoteVideoElements" :key="index" @click="selectVideoBox(index)"/>
+                <!--<video class = "video" :ref= "videoComponent" v-for = "(videoComponent, index) in videoComponents" :key = "index" @click = "selectVideoBox(index)" autoplay></video>-->
+                <video class = "video" ref ="localVideoElement" autoplay></video>
             </div>
         </div>
         <div class = "buttons-area">
