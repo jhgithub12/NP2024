@@ -37,11 +37,11 @@ public class ChattingController {
      * 새로운 사용자가 비디오 채널에 입장 시
      * 해당 채널의 구독자들에게 자신의 이름 전송
      */
-    @MessageMapping("/channels/{channelId}/video/entrance")
+    @MessageMapping("/channels/{channelId}/video/conn")
     @SendTo("/topic/channels/{channelId}/video")
     public JoinDto joinVideoChannel(@DestinationVariable @ExistChannel Long channelId,
                                     @Payload @Valid JoinDto request) {
-        log.info("[VideoChat-Entrance] channelId: {}, sender: {}", channelId, request.getUsername());
+        log.info("[VideoChat-Conn] channelId: {}, sender: {}", channelId, request.getUsername());
         return request;
     }
 
@@ -57,4 +57,9 @@ public class ChattingController {
         messagingTemplate.convertAndSend("/topic/answer/" + ob.get("receiver"), ob);
     }
 
+    @MessageMapping("/candidate")
+    public void deliverCandidate(@Payload JSONObject ob) {
+        log.info("[VideoChat-Candidate]: {} -> {}", ob.get("sender"), ob.get("receiver"));
+        messagingTemplate.convertAndSend("/topic/candidate/" + ob.get("receiver"), ob);
+    }
 }
