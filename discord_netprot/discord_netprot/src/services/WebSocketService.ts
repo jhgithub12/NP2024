@@ -53,9 +53,9 @@ class WebSocketService {
 
   //video methods
 
-  joinVideoChannel(username: string, currentChannelId: string, localStream: MediaStream, remoteVideo: HTMLVideoElement){
-    if(this.stompClient){
-      const videoChannelSubscribe = this.stompClient.subscribe('/topic/channels/' + currentChannelId +'/video', (message) => this.handleRequest(message, username));
+  joinVideoChannel(username: string, currentChannelId: string, localStream: MediaStream, remoteVideos: HTMLVideoElement[]) {
+    if (this.stompClient) {
+      const videoChannelSubscribe = this.stompClient.subscribe('/topic/channels/' + currentChannelId + '/video', (message) => this.handleRequest(message, username));
       const offerSubscribe = this.stompClient.subscribe('/topic/offer/' + username, (message) => this.handleOffer(message, username));
       const answerSubscribe = this.stompClient.subscribe('/topic/answer/' + username, this.handleAnswer);
       const candidateSubscribe = this.stompClient.subscribe('/topic/candidate/' + username, this.handleCandidate);
@@ -67,9 +67,9 @@ class WebSocketService {
 
     this.peerConnection = new RTCPeerConnection();
     localStream.getTracks().forEach(track => this.peerConnection?.addTrack(track, localStream));
-    
-    this.peerConnection.onicecandidate = event =>{
-      if (event.candidate){
+
+    this.peerConnection.onicecandidate = event => {
+      if (event.candidate) {
         this.stompClient?.send('/app/candidate', JSON.stringify({
           sender: username,
           receiver: this.peername,
@@ -79,9 +79,11 @@ class WebSocketService {
     }
 
     this.peerConnection.ontrack = event => {
-      if (remoteVideo.srcObject !== event.streams[0]){
-        remoteVideo.srcObject = event.streams[0];
-      }
+      remoteVideos.forEach((remoteVideo) => {
+        if (remoteVideo.srcObject !== event.streams[0]) {
+          remoteVideo.srcObject = event.streams[0];
+        }
+      });
     };
 
     this.stompClient?.send('/app/channels/' + currentChannelId + '/video/conn', JSON.stringify({

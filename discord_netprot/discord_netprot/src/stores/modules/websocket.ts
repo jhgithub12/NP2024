@@ -8,7 +8,7 @@ export const useWebSocketStore = defineStore('websocket', {
   state: () => ({
     connected: false,
     localStream: null as MediaStream | null,
-    remoteStream: null as MediaStream | null,
+    remoteStreams: [] as MediaStream[], // Changed to array
     currentChannelId: null as string | null,
     currentSubscriptionId: null as string | null,
     username: '',  // Add username to the state
@@ -17,8 +17,8 @@ export const useWebSocketStore = defineStore('websocket', {
     messageList: [] as { username: string, content: string }[],
     //video related
     videoOn: false,
-    localVideoElement: null as HTMLVideoElement | null,
-    remoteVideoElement: null as HTMLVideoElement | null,
+    localVideoElement: document.createElement('video'),
+    remoteVideoElements: Array.from({ length: 5 }, () => document.createElement('video')), // Initialize with 5 video elements
 
   }),
   actions: {
@@ -36,42 +36,46 @@ export const useWebSocketStore = defineStore('websocket', {
           this.localVideoElement.srcObject = this.localStream;
         }
         
-        if(this.currentChannelId && this.remoteVideoElement){
-          WebSocketService.joinVideoChannel(this.username, this.currentChannelId, this.localStream, this.remoteVideoElement);
+        if(this.currentChannelId && this.remoteVideoElements.length > 0){
+          WebSocketService.joinVideoChannel(this.username, this.currentChannelId, this.localStream, this.remoteVideoElements);
         }
       } catch(error){
         console.error('Error starting call', error);
       }
 
     },
-    handleDisconnectedUser(){
+    handleDisconnectedUser() {
       WebSocketService.handleDisconnectedUser();
-      if (this.remoteStream) {
-        this.remoteStream.getTracks().forEach(track => track.stop());
-        this.remoteStream = null;
-        if(this.remoteVideoElement){
-          this.remoteVideoElement.srcObject = null;
-        }
-      }
+      this.remoteStreams.forEach(stream => {
+        stream.getTracks().forEach(track => track.stop());
+      });
+      this.remoteStreams = [];
+      this.remoteVideoElements.forEach(videoElement => {
+        videoElement.srcObject = null;
+      });
+      this.remoteVideoElements = [];
     },
 
-    leaveVideoChannel(){
+    leaveVideoChannel() {
       WebSocketService.leaveVideoChannel_1();
 
       if (this.localStream) {
         this.localStream.getTracks().forEach(track => track.stop());
         this.localStream = null;
-        if(this.localVideoElement)
-        this.localVideoElement.srcObject = null;
-      }
-      if (this.remoteStream) {
-        this.remoteStream.getTracks().forEach(track => track.stop());
-        this.remoteStream = null;
-        if(this.remoteVideoElement)
-        this.remoteVideoElement.srcObject = null;
+        if (this.localVideoElement)
+          this.localVideoElement.srcObject = null;
       }
 
-      if(this.currentChannelId){
+      this.remoteStreams.forEach(stream => {
+        stream.getTracks().forEach(track => track.stop());
+      });
+      this.remoteStreams = [];
+      this.remoteVideoElements.forEach(videoElement => {
+        videoElement.srcObject = null;
+      });
+      this.remoteVideoElements = [];
+
+      if (this.currentChannelId) {
         WebSocketService.leaveVideoChannel_2(this.username, this.currentChannelId);
       }
       this.videoOn = false;
@@ -82,6 +86,8 @@ export const useWebSocketStore = defineStore('websocket', {
         track.enabled = !track.enabled;
       })
     },
+
+    //여기까지가 영상/음성 부분
 
     setUsername(username: string) {  // Add an action to set the username
       this.username = username;

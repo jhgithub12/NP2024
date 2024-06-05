@@ -15,7 +15,21 @@ watch(() => useChannelStore().msg, (newValue) => {
 });
 
 const localVideoElement = ref<HTMLVideoElement | null>(null);
-const remoteVideoElements = ref<HTMLVideoElement[]>([]);
+const remoteVideoElements = ref<HTMLVideoElement[]>([
+    document.createElement('video'),
+    document.createElement('video'),
+    document.createElement('video'),
+    document.createElement('video'),
+    document.createElement('video')
+]);
+
+const remoteVideoElement1 = remoteVideoElements.value[0];
+const remoteVideoElement2 = remoteVideoElements.value[1];
+const remoteVideoElement3 = remoteVideoElements.value[2];
+const remoteVideoElement4 = remoteVideoElements.value[3];
+const remoteVideoElement5 = remoteVideoElements.value[4];
+
+
 
 const startCall = () => {
     joinedCall.value = true;
@@ -26,16 +40,17 @@ const endCall = () => {
     joinedCall.value = false;
     joinedVideo.value = false;
     console.log('Ending call');
-    //end video channel?????
+    useWebSocketStore().leaveVideoChannel();
 };
 const startVideo = () => {
     joinedVideo.value = true;
     console.log('Starting video');
+    useWebSocketStore().handleCamera();
 };
 const endVideo = () => {
     joinedVideo.value = false;
     console.log('Ending video');
-    // Add logic to end video sharing
+    useWebSocketStore().handleCamera();
 };
 
 const confirmJoinedChannel= () =>{
@@ -50,20 +65,27 @@ const confirmJoinedChannel= () =>{
 let intervalId: number | null = null;
 
 onMounted(() => {
-    intervalId = setInterval(confirmJoinedChannel, 100); // Check every second
-    // Assign the messages container reference when the component is mounted
-    msg.value = useChannelStore().msg;
+    // Initialize and set interval to confirm joined channel
+    intervalId = setInterval(confirmJoinedChannel, 100);
 
-    // Initialize local video element
+    // Initialize local and remote video elements
     if (!localVideoElement.value) {
         localVideoElement.value = document.createElement('video');
     }
 
+
     // Set the video elements in the WebSocket store
-    useWebSocketStore().localVideoElement = localVideoElement.value;
-    useWebSocketStore().remoteVideoElement = remoteVideoElements.value;
+    const webSocketStore = useWebSocketStore();
+    webSocketStore.localVideoElement = localVideoElement.value;
+    webSocketStore.remoteVideoElements[0] = remoteVideoElements.value[0];
+    webSocketStore.remoteVideoElements[1] = remoteVideoElements.value[1];
+    webSocketStore.remoteVideoElements[2] = remoteVideoElements.value[2];
+    webSocketStore.remoteVideoElements[3] = remoteVideoElements.value[3];
+    webSocketStore.remoteVideoElements[4] = remoteVideoElements.value[4];
+
 
 });
+
 
 //모든 video elements에 대한 배열
 const videoComponents = ref<HTMLVideoElement[]>([]);
@@ -88,9 +110,14 @@ const selectVideoBox = (index: number) => {
         <div class = "division-bar"></div>
         <div class = "video-area">
             <div class = "video-box-large-video">
+                <video class = "video" ref ="remoteVideoElement1" autoplay></video>
+                <video class = "video" ref ="remoteVideoElement2" autoplay></video>
+                <video class = "video" ref ="remoteVideoElement3" autoplay></video>
             </div>
             <div class="video-box">
                 <!--<video class = "video" :ref= "videoComponent" v-for = "(videoComponent, index) in videoComponents" :key = "index" @click = "selectVideoBox(index)" autoplay></video>-->
+                <video class = "video" ref ="remoteVideoElement4" autoplay></video>
+                <video class = "video" ref ="remoteVideoElement5" autoplay></video>
                 <video class = "video" ref ="localVideoElement" autoplay></video>
             </div>
         </div>
@@ -215,7 +242,7 @@ const selectVideoBox = (index: number) => {
     background-color: black;
     margin: 10px;
     border-radius: 10px 10px;
-    cursor: pointer;
+    user-select: none; 
 }
 .buttons-area {
     border-bottom-right-radius: 15px;
