@@ -8,16 +8,81 @@ export const useWebSocketStore = defineStore('websocket', {
   state: () => ({
     connected: false,
     localStream: null as MediaStream | null,
+    remoteStream: null as MediaStream | null,
     currentChannelId: null as string | null,
     currentSubscriptionId: null as string | null,
     username: '',  // Add username to the state
     userList: [] as string[],
     channelList: [] as { id: string, name: string }[],
     messageList: [] as { username: string, content: string }[],
-    localVideoElement: null as HTMLVideoElement | null,  // Initialize as null
-    remoteVideoElement: [] as HTMLVideoElement[], // Initialize as null
+    //video related
+    videoOn: false,
+    localVideoElement: null as HTMLVideoElement | null,
+    remoteVideoElement: null as HTMLVideoElement | null,
+
   }),
   actions: {
+    async joinVideoChannel(){
+      this.videoOn = true;
+      try{
+        this.localStream = await navigator.mediaDevices.getUserMedia({
+          video: true,
+          audio: true
+        });
+        this.localStream.getVideoTracks().forEach((track) => {
+          track.enabled = false;
+        });
+        if(this.localVideoElement){
+          this.localVideoElement.srcObject = this.localStream;
+        }
+        
+        if(this.currentChannelId && this.remoteVideoElement){
+          WebSocketService.joinVideoChannel(this.username, this.currentChannelId, this.localStream, this.remoteVideoElement);
+        }
+      } catch(error){
+        console.error('Error starting call', error);
+      }
+
+    },
+    handleDisconnectedUser(){
+      WebSocketService.handleDisconnectedUser();
+      if (this.remoteStream) {
+        this.remoteStream.getTracks().forEach(track => track.stop());
+        this.remoteStream = null;
+        if(this.remoteVideoElement){
+          this.remoteVideoElement.srcObject = null;
+        }
+      }
+    },
+
+    leaveVideoChannel(){
+      WebSocketService.leaveVideoChannel_1();
+
+      if (this.localStream) {
+        this.localStream.getTracks().forEach(track => track.stop());
+        this.localStream = null;
+        if(this.localVideoElement)
+        this.localVideoElement.srcObject = null;
+      }
+      if (this.remoteStream) {
+        this.remoteStream.getTracks().forEach(track => track.stop());
+        this.remoteStream = null;
+        if(this.remoteVideoElement)
+        this.remoteVideoElement.srcObject = null;
+      }
+
+      if(this.currentChannelId){
+        WebSocketService.leaveVideoChannel_2(this.username, this.currentChannelId);
+      }
+      this.videoOn = false;
+    },
+
+    handleCamera(){
+      this.localStream?.getVideoTracks().forEach((track)=>{
+        track.enabled = !track.enabled;
+      })
+    },
+
     setUsername(username: string) {  // Add an action to set the username
       this.username = username;
     },
@@ -84,21 +149,5 @@ export const useWebSocketStore = defineStore('websocket', {
           console.error('Failed to load channel list');
         });
     },
-    async setVideoStream() {
-      if (this.localVideoElement) {
-        this.localStream = await WebSocketService.setVideoStream(this.localVideoElement);
-      } else {
-        console.error('Local video element is not set');
-      }
-    },
-    joinVideoChannel() {
-      if (this.currentChannelId) {
-        if (this.localVideoElement && this.remoteVideoElement) { // Ensure elements are not null
-          WebSocketService.joinVideoChannel(this.currentChannelId, this.username, this.localVideoElement, this.remoteVideoElement);
-        } else {
-          console.error('Video elements are not set');
-        }
-      }
-    }
   }
 });

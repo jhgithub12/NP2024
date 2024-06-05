@@ -1,13 +1,18 @@
 // src/services/WebSocketService.ts
 import SockJS from 'sockjs-client';
 import Stomp from 'webstomp-client';
-import Peer from 'simple-peer';
+import type { Message } from 'webstomp-client';
 
 class WebSocketService {
   private stompClient: Stomp.Client | null = null;
-  private peers: Peer.Instance[] = [];
-  private localStream: MediaStream | null = null;
-  private remoteStreams: MediaStream[] = [];
+  private videoChannelSubscribeId: string | null = null;
+  private offerSubscribeId: string | null = null;
+  private answerSubscribeId: string | null = null;
+  private candidateSubscribeId: string | null = null;
+  private peerConnection: RTCPeerConnection | null = null;
+  private peername: string | null = null;
+
+
 
   connect(username: string, onConnect: () => void, onError: (error: any) => void) {
     const serverURL = 'http://localhost:8080/ws';
@@ -46,113 +51,112 @@ class WebSocketService {
     return this.stompClient ? this.stompClient.connected : false;
   }
 
-  async setVideoStream(localVideoElement: HTMLVideoElement): Promise<MediaStream | null> {
-    try {
-      const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
-      localVideoElement.srcObject = stream;
-      this.localStream = stream;
-      return stream;
-    } catch (error) {
-      console.error('Error accessing media devices.', error);
-      return null;
+  //video methods
+
+  joinVideoChannel(username: string, currentChannelId: string, localStream: MediaStream, remoteVideo: HTMLVideoElement){
+    if(this.stompClient){
+      const videoChannelSubscribe = this.stompClient.subscribe('/topic/channels/' + currentChannelId +'/video', (message) => this.handleRequest(message, username));
+      const offerSubscribe = this.stompClient.subscribe('/topic/offer/' + username, (message) => this.handleOffer(message, username));
+      const answerSubscribe = this.stompClient.subscribe('/topic/answer/' + username, this.handleAnswer);
+      const candidateSubscribe = this.stompClient.subscribe('/topic/candidate/' + username, this.handleCandidate);
+      this.videoChannelSubscribeId = videoChannelSubscribe.id;
+      this.offerSubscribeId = offerSubscribe.id;
+      this.answerSubscribeId = answerSubscribe.id;
+      this.candidateSubscribeId = candidateSubscribe.id;
+    }
+
+    this.peerConnection = new RTCPeerConnection();
+    localStream.getTracks().forEach(track => this.peerConnection?.addTrack(track, localStream));
+    
+    this.peerConnection.onicecandidate = event =>{
+      if (event.candidate){
+        this.stompClient?.send('/app/candidate', JSON.stringify({
+          sender: username,
+          receiver: this.peername,
+          candidate: event.candidate
+        }), {});
+      }
+    }
+
+    this.peerConnection.ontrack = event => {
+      if (remoteVideo.srcObject !== event.streams[0]){
+        remoteVideo.srcObject = event.streams[0];
+      }
+    };
+
+    this.stompClient?.send('/app/channels/' + currentChannelId + '/video/conn', JSON.stringify({
+      username: username,
+      eventType: 'CONNECT'
+    }), {});
+  }
+  
+  async handleRequest(message: Message, username: string){
+    const peername = JSON.parse(message.body).username;
+    this.peername = peername;
+    if(peername!== this.peername){
+      if(JSON.parse(message.body).eventType === "CONNECT"){
+        const offer = await this.peerConnection?.createOffer();
+        this.peerConnection?.setLocalDescription(offer);
+        this.stompClient?.send('/app/offer', JSON.stringify({
+          sender: username,
+          receiver: peername,
+          signal: offer
+        }), {});
+      }
+      else{
+        this.peername = null;
+      }
     }
   }
 
-  joinVideoChannel(currentChannelId: string, username: string, localVideoElement: HTMLVideoElement, remoteVideoElements: HTMLVideoElement[]) {
-    this.setVideoStream(localVideoElement).then(() => {
-      if (this.stompClient && currentChannelId) {
-        const videoSubscription = this.stompClient.subscribe('/topic/channels/' + currentChannelId + '/video', res => {
-          const receivedUsername = JSON.parse(res.body).username;
-          if (username !== receivedUsername) {
-            this.sendOffer(receivedUsername, remoteVideoElements);
-          }
-        });
-
-        const offerSubscription = this.stompClient.subscribe('/topic/offer/' + username, res => {
-          const response = JSON.parse(res.body);
-          this.sendAnswer(response.sender, remoteVideoElements);
-          this.handleSignal(response.signal);
-        });
-
-        const answerSubscription = this.stompClient.subscribe('/topic/answer/' + username, res => {
-          const response = JSON.parse(res.body);
-          this.handleSignal(response.signal);
-        });
-
-        this.stompClient.send("/app/channels/" + currentChannelId + '/video/entrance', JSON.stringify({ username }), {});
-      }
-    });
+  async handleOffer(message: Message, username: string) {
+    const offer = JSON.parse(message.body).signal;
+    this.peername = JSON.parse(message.body).sender;
+    this.peerConnection?.setRemoteDescription(new RTCSessionDescription(offer));
+    const answer = await this.peerConnection?.createAnswer();
+    this.peerConnection?.setLocalDescription(answer);
+    this.stompClient?.send('/app/answer', JSON.stringify({
+      sender: username,
+      receiver: JSON.parse(message.body).sender,
+      signal: answer
+    }), {});
   }
-  private sendOffer(username: string, remoteVideoElements: HTMLVideoElement[]) {
-    const peer = new Peer({
-      initiator: true,
-      trickle: false,
-      stream: this.localStream || undefined
-    });
-
-    peer.on('signal', (data) => {
-      if (this.stompClient) {
-        this.stompClient.send('/app/offer', JSON.stringify({
-          sender: username,
-          receiver: username,
-          signal: data
-        }));
-      }
-    });
-
-    peer.on('stream', (stream) => {
-      const availableVideoElement = remoteVideoElements.find(videoElement => !videoElement.srcObject);
-      if (availableVideoElement) {
-        availableVideoElement.srcObject = stream;
-        this.remoteStreams.push(stream);
-      }
-    });
-
-    peer.on('error', (err) => {
-      console.error('Error with peer connection:', err);
-    });
-
-    this.peers.push(peer);
+  async handleAnswer(message: Message) {
+    const answer = JSON.parse(message.body).signal;
+    this.peerConnection?.setRemoteDescription(new RTCSessionDescription(answer));
   }
-
-  private sendAnswer(username: string, remoteVideoElements: HTMLVideoElement[]) {
-    const peer = new Peer({
-      initiator: false,
-      trickle: false,
-      stream: this.localStream || undefined
-    });
-
-    peer.on('signal', (data) => {
-      if (this.stompClient) {
-        this.stompClient.send('/app/answer', JSON.stringify({
-          sender: username,
-          receiver: username,
-          signal: data
-        }));
-      }
-    });
-
-    peer.on('stream', (stream) => {
-      const availableVideoElement = remoteVideoElements.find(videoElement => !videoElement.srcObject);
-      if (availableVideoElement) {
-        availableVideoElement.srcObject = stream;
-        this.remoteStreams.push(stream);
-      }
-    });
-
-    peer.on('error', (err) => {
-      console.error('Error with peer connection:', err);
-    });
-
-    this.peers.push(peer);
+  async handleCandidate(message: Message) {
+    const candidate = JSON.parse(message.body).candidate;
+    await this.peerConnection?.addIceCandidate(new RTCIceCandidate(candidate));
   }
+  handleDisconnectedUser() {
+    this.peername = null;
 
-  private handleSignal(signalData: any) {
-    this.peers.forEach(peer => {
-      if (peer) {
-        peer.signal(signalData);
-      }
-    });
+    if (this.peerConnection) {
+      this.peerConnection.close();
+      this.peerConnection = null;
+    }
+  }
+  leaveVideoChannel_1(){
+    this.peername = null;
+
+    if (this.peerConnection) {
+      this.peerConnection.close();
+      this.peerConnection = null;
+    }
+  }
+  leaveVideoChannel_2(username: string, currentChannelId: string){
+    if(this.stompClient && this.videoChannelSubscribeId && this.offerSubscribeId && this.answerSubscribeId && this.candidateSubscribeId){
+      this.stompClient.unsubscribe(this.videoChannelSubscribeId);
+      this.stompClient.unsubscribe(this.offerSubscribeId);
+      this.stompClient.unsubscribe(this.answerSubscribeId);
+      this.stompClient.unsubscribe(this.candidateSubscribeId);
+
+      this.stompClient.send('/app/channels/' + currentChannelId + '/video/conn', JSON.stringify({
+          username: username,
+          eventType: 'DISCONNECT'
+        }), {});
+    }
   }
 
 }

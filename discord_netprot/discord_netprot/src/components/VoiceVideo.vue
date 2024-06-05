@@ -15,7 +15,7 @@ watch(() => useChannelStore().msg, (newValue) => {
 });
 
 const localVideoElement = ref<HTMLVideoElement | null>(null);
-const allVideoElements = ref<HTMLVideoElement[]>([]);
+const remoteVideoElements = ref<HTMLVideoElement[]>([]);
 
 const startCall = () => {
     joinedCall.value = true;
@@ -54,17 +54,15 @@ onMounted(() => {
     // Assign the messages container reference when the component is mounted
     msg.value = useChannelStore().msg;
 
-    // Initialize local video element and add to all video elements
+    // Initialize local video element
     if (!localVideoElement.value) {
         localVideoElement.value = document.createElement('video');
-        allVideoElements.value.push(localVideoElement.value);
     }
 
     // Set the video elements in the WebSocket store
     useWebSocketStore().localVideoElement = localVideoElement.value;
-    useWebSocketStore().remoteVideoElement = allVideoElements.value;
+    useWebSocketStore().remoteVideoElement = remoteVideoElements.value;
 
-    videoComponents.value.push(localVideoElement.value);
 });
 
 //모든 video elements에 대한 배열
