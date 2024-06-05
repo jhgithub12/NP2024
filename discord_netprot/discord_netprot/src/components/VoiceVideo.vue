@@ -115,7 +115,6 @@ const selectVideoBox = (index: number) => {
                 <video class = "video" ref ="remoteVideoElement3" autoplay></video>
             </div>
             <div class="video-box">
-                <!--<video class = "video" :ref= "videoComponent" v-for = "(videoComponent, index) in videoComponents" :key = "index" @click = "selectVideoBox(index)" autoplay></video>-->
                 <video class = "video" ref ="remoteVideoElement4" autoplay></video>
                 <video class = "video" ref ="remoteVideoElement5" autoplay></video>
                 <video class = "video" ref ="localVideoElement" autoplay></video>
@@ -216,7 +215,7 @@ const selectVideoBox = (index: number) => {
 }
 .video-box {
     width: 100%;
-    height: 150px;
+    height: 50%;
     align-items: center;
     justify-content: center;
     display: flex;
@@ -237,8 +236,8 @@ const selectVideoBox = (index: number) => {
 
 }
 .video{
-    width: 160px;
-    height: 120px;
+    width: 30%;
+    height: 50%;
     background-color: black;
     margin: 10px;
     border-radius: 10px 10px;

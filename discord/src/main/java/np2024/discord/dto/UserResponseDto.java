@@ -16,6 +16,7 @@ public class UserResponseDto {
     @Getter
     @AllArgsConstructor
     public static class GetResultDto {
+        private long id; // Added ID field
         private String username;
     }
 }

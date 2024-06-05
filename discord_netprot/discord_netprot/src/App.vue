@@ -1,11 +1,12 @@
 <script setup lang="ts">
-import { ref } from 'vue'
+import { ref, onMounted} from 'vue'
 import { RouterLink, RouterView } from 'vue-router'
 import CurrentlyOnline from './components/CurrentlyOnline.vue'
 import ChannelsAvailable from './components/ChannelsAvailable.vue';
 import VoiceVideo from './components/VoiceVideo.vue';
 import TextChatting from './components/TextChatting.vue';
 import LogInSystem from './components/LogInSystem.vue';
+import axios from 'axios';
 
 import { defineComponent } from 'vue';
 
@@ -17,24 +18,75 @@ const joinServer =( name: string )=>{
   showModal.value = false // Close the modal after server join
 }
 
+const fetchUsers = async () => {
+  try {
+    const response = await axios.get('http://localhost:8080/users');
+    users.value = response.data.map((userlist: { id: number, username: string }) => ({
+      name: userlist.username, // Corrected key access
+      id: userlist.id,
+    }));
+  } catch (error) {
+    console.error('Failed to fetch users:', error);
+  }
+};
+
+interface dpInfo{
+    id: number;
+    src: string;
+    alt: string;
+}
+
+const images = ref<dpInfo[]>([
+  { id: 1, src: '/src/assets/sample/dp1.png', alt: 'Description of image 1' },
+  { id: 2, src: '/src/assets/sample/dp2.png', alt: 'Description of image 2' },
+  { id: 3, src: '/src/assets/sample/dp3.png', alt: 'Description of image 3' },
+  { id: 4, src: '/src/assets/sample/dp4.png', alt: 'Description of image 4' },
+  { id: 5, src: '/src/assets/sample/dp5.png', alt: 'Description of image 5' },
+  { id: 6, src: '/src/assets/sample/dp6.png', alt: 'Description of image 6' },
+  // Add more images as needed
+]);
+
+interface userInfo{
+    id: number;
+    name: string;
+    dp: number;
+}
+const users = ref<userInfo[]>([]);
+
+const getImageSource = () => {
+  // Iterate over the users array to find the user with the matching userName
+  for (const user of users.value) {
+    if (user.name === userName.value) {
+      // Find the image that matches the user's dp id
+      const image = images.value.find(img => img.id === user.id);
+      return image ? image.src : '';
+    }
+  }
+  return ''; // Return an empty string or a default value if no match is found
+};
+
+const getImageSrc = () => {
+  // Find the user object where the name matches userName.value
+  const user = users.value.find(user => user.name === userName.value);
+  
+  // Check if user is found and then find the image with the matching id
+  if (user) {
+    const image = images.value.find(img => img.id === user.dp);
+    return image ? image.src : '';
+  }
+  
+  // If user is not found or image is not found, return an empty string or a default image
+  return '';
+};
+
+let intervalId: number | null = null;
+onMounted(() => {
+    intervalId = setInterval(fetchUsers, 1000); // Check every second
+});
+
 </script>
 
 <template>
-  <!--
-  <header>
-    <img alt="Vue logo" class="logo" src="@/assets/logo.svg" width="125" height="125" />
-
-    <div class="wrapper">
-      <HelloWorld msg="You did it!" />
-
-      <nav>
-        <RouterLink to="/">Home</RouterLink>
-        <RouterLink to="/about">About</RouterLink>
-      </nav>
-    </div>
-  </header>
-  <RouterView />
-  -->
   <div class = "app-area">
     <LogInSystem :show="showModal" @joinServer="joinServer"/>
     <div class = "top-bar">
@@ -48,7 +100,7 @@ const joinServer =( name: string )=>{
         <ChannelsAvailable/>
         <div class = "bottom-bar">
           <!-- USER INFORMATION (사용자 정보)-->
-          <img alt="Profile picture" class="dp" src="@/assets/sample/sample_dp.png" />
+          <img alt="Profile picture" class="dp" :src="getImageSource()" />
           <div class = "username">{{ userName }}</div>
         </div>
       </div>

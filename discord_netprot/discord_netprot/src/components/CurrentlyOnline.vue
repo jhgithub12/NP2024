@@ -16,18 +16,24 @@ interface dpInfo{
 }
 
 const images = ref<dpInfo[]>([
-  { id: 1, src: '/src/assets/sample/sample_dp.png', alt: 'Description of image 1' },
+  { id: 1, src: '/src/assets/sample/dp1.png', alt: 'Description of image 1' },
+  { id: 2, src: '/src/assets/sample/dp2.png', alt: 'Description of image 2' },
+  { id: 3, src: '/src/assets/sample/dp3.png', alt: 'Description of image 3' },
+  { id: 4, src: '/src/assets/sample/dp4.png', alt: 'Description of image 4' },
+  { id: 5, src: '/src/assets/sample/dp5.png', alt: 'Description of image 5' },
+  { id: 6, src: '/src/assets/sample/dp6.png', alt: 'Description of image 6' },
   // Add more images as needed
 ]);
 
 const fetchUsers = async () => {
   try {
     const response = await axios.get('http://localhost:8080/users');
-    users.value = response.data.map((userlist: { username: string }) => ({
+    users.value = response.data.map((userlist: { id: number, username: string }) => ({
       name: userlist.username, // Corrected key access
+      id: userlist.id,
     }));
   } catch (error) {
-    console.error('Failed to fetch channels:', error);
+    console.error('Failed to fetch users:', error);
   }
 };
 
@@ -93,7 +99,7 @@ const getImageSrc = (dpId: number) => {
                 v-for="user in users" 
                 :key="user.id">
                 <!-- <img :src="getImageSrc(user.dp)" alt="Profile Picture" class="profile-picture" />-->
-                <img :src="getImageSrc(1)" alt="Profile Picture" class="profile-picture" />
+                <img :src="getImageSrc(user.id)" alt="Profile Picture" class="profile-picture" />
                 <!--{{ user.name }}-->
                 {{ user.name }}
             </p>

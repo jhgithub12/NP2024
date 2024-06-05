@@ -30,7 +30,7 @@ public class UserController {
     })
     public List<GetResultDto> getAll() {
         return sessionRepository.findAll().stream()
-                .map(user -> new GetResultDto(user.getName()))
+                .map(user -> new GetResultDto(user.getId(), user.getName())) // Include ID in the DTO
                 .collect(Collectors.toList());
     }
 }

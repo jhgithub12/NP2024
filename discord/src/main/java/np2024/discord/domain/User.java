@@ -7,10 +7,15 @@ import lombok.NoArgsConstructor;
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class User {
+    private static long idCounter = 1;
+
+    private long id;
+
     private String name;
     private Channel channel;
 
     public User(String name) {
+        this.id = idCounter++;
         this.name = name;
     }
 

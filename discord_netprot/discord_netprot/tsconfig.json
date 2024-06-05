@@ -9,9 +9,13 @@
     }
   ],
     "compilerOptions": {
+      "esModuleInterop": true,
+      "allowSyntheticDefaultImports": true,
       // Other compiler options...
       "typeRoots": ["node_modules/@types", "src/types"]
-  }
+      
+  },
+  
   
 }
 

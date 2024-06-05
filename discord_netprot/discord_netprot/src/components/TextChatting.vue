@@ -2,6 +2,7 @@
 import { ref, onMounted, watch } from 'vue'
 import { useChannelStore } from '@/stores/channelStore';
 import { useWebSocketStore } from '@/stores/modules/websocket';
+import axios from 'axios';
 
 
 const msg = ref('');
@@ -52,11 +53,62 @@ const scrollToBottom = () => {
     }
 };
 
+//Image settings
+const fetchUsers = async () => {
+  try {
+    const response = await axios.get('http://localhost:8080/users');
+    users.value = response.data.map((userlist: { id: number, username: string }) => ({
+      name: userlist.username, // Corrected key access
+      id: userlist.id,
+    }));
+  } catch (error) {
+    console.error('Failed to fetch users:', error);
+  }
+};
+
+interface dpInfo{
+    id: number;
+    src: string;
+    alt: string;
+}
+
+const images = ref<dpInfo[]>([
+  { id: 1, src: '/src/assets/sample/dp1.png', alt: 'Description of image 1' },
+  { id: 2, src: '/src/assets/sample/dp2.png', alt: 'Description of image 2' },
+  { id: 3, src: '/src/assets/sample/dp3.png', alt: 'Description of image 3' },
+  { id: 4, src: '/src/assets/sample/dp4.png', alt: 'Description of image 4' },
+  { id: 5, src: '/src/assets/sample/dp5.png', alt: 'Description of image 5' },
+  { id: 6, src: '/src/assets/sample/dp6.png', alt: 'Description of image 6' },
+  // Add more images as needed
+]);
+
+interface userInfo{
+    id: number;
+    name: string;
+    dp: number;
+}
+const users = ref<userInfo[]>([]);
+
+const getImageSource = (userName: string) => {
+  // Iterate over the users array to find the user with the matching userName
+  for (const user of users.value) {
+    if (user.name === userName) {
+      // Find the image that matches the user's dp id
+      const image = images.value.find(img => img.id === user.id);
+      return image ? image.src : '';
+    }
+  }
+  return ''; // Return an empty string or a default value if no match is found
+};
+
+
+let intervalId: number | null = null;
 onMounted(() => {
     // Assign the messages container reference when the component is mounted
     msg.value = useChannelStore().msg;
     messagesRef.value = document.querySelector('.messages');
     scrollToBottom();
+    intervalId = setInterval(fetchUsers, 1000); // Check every second
 });
 </script>
 
@@ -73,7 +125,7 @@ onMounted(() => {
             <div class="messages">
                 <!-- Loop through typedMessages and display each message -->
                 <div v-for="(message, index) in useWebSocketStore().messageList" :key="index" class="message">
-                    <img :src="message.content" alt="Profile Picture" class="profile-picture" />
+                    <img :src="getImageSource(message.username)" alt="Profile Picture" class="profile-picture" />
                     <div class="message-content">
                         <p class="sender-name">{{ message.username }}</p>
                         <p>{{ message.content }}</p>
